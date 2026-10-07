@@ -21,4 +21,4 @@ The files listed above are commented fairly extensively and organized with purpo
 -Salted and hashed password management
 -JWT tokens for secure authorization
 
-- tbd
+
