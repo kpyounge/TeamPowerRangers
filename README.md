@@ -21,4 +21,8 @@ The files listed above are commented fairly extensively and organized with purpo
 -Salted and hashed password management
 -JWT tokens for secure authorization
 
+<<<<<<< HEAD
 chris was here
+=======
+- tbd
+>>>>>>> 504e19998b9764b2c794cda1fe32e9853f1faf3c
