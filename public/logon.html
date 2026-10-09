@@ -10,11 +10,9 @@
 
 <body>
     <div class="container">
-        <h1>Welcome to Node App</h1>
-        <div class="tab">
-            <button class="tab-button active" id="login-tab">Logon</button>
-            <button class="tab-button" id="create-account-tab">Create Account</button>
-        </div>
+        <h1>Habit Stacker</h1>
+        <h2> Build Your Dream Routine</h2>
+        
 
         <div id="form-container">
             <!-- Logon Form -->
@@ -25,7 +23,9 @@
                 <label for="login-password">Password:</label>
                 <input type="password" id="login-password" placeholder="Enter your password" required>
 
-                <button type="submit" class="button">Logon</button>
+                <button type="submit" class="button">Log In</button>
+
+                <button type="button" class="signup-link" id="create-account-tab">sign up</button>
             </form>
 
             <!-- Create Account Form -->
@@ -37,6 +37,11 @@
                 <input type="password" id="create-password" placeholder="Create your password" required>
 
                 <button type="submit" class="button">Create Account</button>
+
+                <button type="button" class="signup-link" id="login-tab">
+                    back to log
+                </button>
+
             </form>
 
             <p id="message" class="message"></p>

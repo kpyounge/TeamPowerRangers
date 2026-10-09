@@ -63,6 +63,7 @@ createAccountForm.addEventListener('submit', async (event) => {
         const result = await response.json();
         if (response.ok) {
             messageEl.textContent = 'Account created successfully! You can now log in.';
+            messageEl.classList.remove('error');
             messageEl.classList.add('success');
             document.getElementById('login-email').value = email;
             document.getElementById('login-password').value = password;
@@ -72,6 +73,7 @@ createAccountForm.addEventListener('submit', async (event) => {
             createAccountTab.classList.remove('active');
         } else {
             messageEl.textContent = result.message;
+            messageEl.classList.remove('success')
             messageEl.classList.add('error');
         }
     } catch (error) {

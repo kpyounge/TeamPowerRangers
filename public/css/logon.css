@@ -1,17 +1,18 @@
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f4f4f9;
+    background-color: #000000;
     margin: 0;
     padding: 0;
 }
 
 .container {
-    max-width: 400px;
+    max-width: 700px;
     margin: 5% auto;
     padding: 20px;
-    background-color: white;
+    background-color: #5E57FF;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    color: white;
+    
 }
 
 h1 {
@@ -19,24 +20,12 @@ h1 {
     margin-bottom: 20px;
 }
 
-.tab {
-    display: flex;
-    justify-content: space-around;
-    margin-bottom: 20px;
+h2 {
+    text-align: center;
+    width: 100%;
+    margin: 0 auto 30px auto;
 }
 
-.tab-button {
-    flex: 1;
-    padding: 10px 0;
-    border: none;
-    cursor: pointer;
-    background-color: #ddd;
-}
-
-.tab-button.active {
-    background-color: #4caf50;
-    color: white;
-}
 
 form {
     display: none;
@@ -56,21 +45,38 @@ input {
     padding: 10px;
     margin-bottom: 10px;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 12px;
+    box-sizing: border-box;
 }
 
 .button {
-    width: 100%;
+    display:block;
+    width: 200px;
     padding: 10px;
-    background-color: #4caf50;
+    margin: 15px auto 5px auto;
+    background-color: #02FEE4;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.signup-link {
+    display: block;
+    margin: 5px auto;
+    padding: 0;
+    background: none;
+    border: none;
+    color: white;
+    text-decoration: underline;
+    font-size: 16px;
     cursor: pointer;
 }
 
 .button:hover {
-    background-color: #45a049;
+    background-color: #4BFF36;
 }
 
 .message {
@@ -80,7 +86,7 @@ input {
 }
 
 .success {
-    color: green;
+    color: #4BFF36;
 }
 
 .error {
