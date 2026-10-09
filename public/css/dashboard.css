@@ -1,66 +1,301 @@
+/* ===========================================================
+   Habit Stacker - dark theme, per team Design Guide:
+   - pure black background, white text
+   - palette: purple 5E57FF, pink F23CA6, orange FF9535,
+              green 4BFF36, cyan 02FEE4
+   =========================================================== */
+
+   :root {
+    --color-bg: #000000;
+    --color-text: #FFFFFF;
+    --color-purple: #5E57FF;
+    --color-pink: #F23CA6;
+    --color-orange: #FF9535;
+    --color-green: #4BFF36;
+    --color-cyan: #02FEE4;
+    --row-bg: #000000;
+}
+
+* { box-sizing: border-box; }
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     margin: 0;
     padding: 0;
 }
 
 .container {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    width: 60%;
+    width: 90%;
+    max-width: 700px;
     margin: 0 auto;
-    margin-top: 20px;
+    padding: 24px 16px 100px;
 }
 
+/* ---------- Header ---------- */
 .header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    row-gap: 10px;
+    margin-bottom: 24px;
 }
 
-.header div {
+.header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.header-links {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+}
+
+.header-links a {
+    color: var(--color-text);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+#logoutButton, #refreshButton {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    background-color: var(--color-purple);
+    color: var(--color-text);
+}
+
+#logoutButton:hover, #refreshButton:hover {
+    opacity: 0.85;
+}
+
+/* ---------- Stacks ---------- */
+.stacks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stack-section {
+    border-radius: 20px;
+    padding: 16px;
+}
+
+.stack-section h2 {
+    margin: 0 0 12px 4px;
+    color: #000000;
+    font-size: 1.2rem;
+}
+
+/* time-of-day section colors, matching the wireframe */
+.stack-section.morning   { background-color: var(--color-cyan); }
+.stack-section.afternoon { background-color: var(--color-pink); }
+.stack-section.evening   { background-color: var(--color-purple); }
+.stack-section.night     { background-color: var(--color-orange); }
+
+.stack-section.evening h2,
+.stack-section.night h2 {
+    color: var(--color-text); /* white text reads better on purple/orange */
+}
+
+.habit-list {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
-h1 {
-    margin: 0;
+/* ---------- Habit row (black pill) ---------- */
+.habit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--row-bg);
+    border-radius: 30px;
+    padding: 10px 16px;
 }
 
-#logoutButton {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
+.habit-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.habit-row.completed .habit-name {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* ---------- Circular checkbox ---------- */
+.habit-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--color-text);
+    background-color: transparent;
     cursor: pointer;
+    flex-shrink: 0;
+    display: grid;
+    place-content: center;
 }
 
-#logoutButton:hover {
-    background-color: #0056b3;
+.habit-checkbox:checked {
+    background-color: var(--color-green);
+    border-color: var(--color-green);
 }
 
-#refreshButton {
-    background-color: #28a745; /* Same green color from logon button */
-    color: white;
+.habit-checkbox:checked::after {
+    content: "\2714";
+    font-size: 0.9rem;
+    color: #000000;
+}
+
+/* ---------- Three-dot menu button ---------- */
+.menu-btn {
+    background: none;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    color: var(--color-text);
+    font-size: 1.3rem;
     cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    flex-shrink: 0;
 }
 
-#refreshButton:hover {
-    background-color: #218838; /* Slightly darker green for hover effect */
+.empty-stack-msg {
+    color: #000000;
+    opacity: 0.6;
+    font-size: 0.9rem;
+    padding: 4px;
 }
 
-.user-list {
+/* ---------- Floating add button ---------- */
+.add-habit-btn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background-color: var(--color-green);
+    border: none;
+    color: #000000;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.add-habit-btn:hover {
+    opacity: 0.9;
+}
+
+/* ---------- Modal (Input new habit pop-up) ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-box {
+    background-color: var(--color-purple);
+    border-radius: 20px;
+    padding: 24px;
+    width: 90%;
+    max-width: 360px;
+}
+
+.modal-box h2 {
+    margin-top: 0;
+}
+
+.modal-box label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.modal-box input,
+.modal-box select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
     margin-top: 20px;
 }
 
+.modal-actions button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#modalCancelBtn {
+    background-color: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-text);
+}
+
+#modalSaveBtn {
+    background-color: var(--color-cyan);
+    color: #000000;
+}
+
+/* ---------- Profile page (reuses this stylesheet) ---------- */
+.user-list {
+    margin-top: 10px;
+    background-color: var(--color-purple);
+    border-radius: 16px;
+    padding: 6px 16px;
+}
+
 .user-item {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+    padding: 10px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+}
+
+.user-item:last-child {
+    border-bottom: none;
+}
+
+.loading-message {
+    padding: 10px 4px;
+    opacity: 0.8;
 }

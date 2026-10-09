@@ -3,22 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Habit Stacks</title>
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Users</h1>
-            <div>
-                <button id="refreshButton">Refresh List</button>
+            <h1>Habit Stacks</h1>
+            <div class="header-links">
+                <a href="/profile">Profile</a>
                 <button id="logoutButton">Log Out</button>
             </div>
         </div>
-        <div class="user-list" id="userList"></div>
+
+        <!-- Habit stacks are grouped by time of day. For Sprint 1 this is a
+             static layout built from sample data in dashboard.js - no
+             backend habit routes exist yet, so nothing here is saved. -->
+        <div class="stacks-container" id="stacksContainer"></div>
     </div>
-    <script src="/js/dashboard.js"></script>
+
+    <!-- Floating "add habit" button -->
+    <button id="addHabitBtn" class="add-habit-btn" title="Add habit">+</button>
+
+    <!-- "Input new habit" pop-up, per design guide -->
+    <div id="habitModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2>Add a Habit</h2>
+
+            <label for="habitNameInput">Habit name</label>
+            <input type="text" id="habitNameInput" placeholder="e.g. Brush teeth">
+
+            <label for="habitTimeInput">Time of day</label>
+            <select id="habitTimeInput">
+                <option value="morning">Morning</option>
+                <option value="afternoon">Afternoon</option>
+                <option value="evening">Evening</option>
+                <option value="night">Night</option>
+            </select>
+
+            <label for="habitStatusInput">Status</label>
+            <select id="habitStatusInput">
+                <option value="working_on">Working On (new habit)</option>
+                <option value="current">Current (already cemented)</option>
+            </select>
+
+            <div class="modal-actions">
+                <button id="modalCancelBtn">Cancel</button>
+                <button id="modalSaveBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/js/datamodel.js"></script>
-    <!-- ur mom -->
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>
