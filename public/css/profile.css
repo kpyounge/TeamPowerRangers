@@ -1,0 +1,218 @@
+/* Color palette */
+
+:root {
+    --black: #000000;
+    --white: #ffffff;
+    --purple: #5e57ff;
+    --pink: #f23ca6;
+    --orange: #ff9535;
+    --green: #4bff36;
+    --cyan: #02fee4;
+    --dark-gray: #111111;
+    --medium-gray: #222222;
+}
+
+
+/* Page */
+
+body {
+    margin: 0;
+    padding: 30px;
+    font-family: Arial, sans-serif;
+    color: var(--white);
+    background-color: var(--black);
+}
+
+
+/* Profile information */
+
+.profile-container {
+    max-width: 700px;
+    margin: 0 auto 25px;
+    padding: 25px;
+    text-align: center;
+    background-color: var(--dark-gray);
+    border: 2px solid var(--purple);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(94, 87, 255, 0.4);
+}
+
+.profile-container h1 {
+    margin: 0 0 10px;
+    color: var(--cyan);
+}
+
+.profile-container p {
+    margin: 0;
+    color: var(--white);
+}
+
+
+/* Profile statistics */
+
+.summary-container {
+    max-width: 700px;
+    margin: 0 auto 25px;
+    display: flex;
+    gap: 20px;
+}
+
+.stat-card {
+    flex: 1;
+    padding: 20px;
+    text-align: center;
+    background-color: var(--dark-gray);
+    border: 2px solid var(--pink);
+    border-radius: 10px;
+}
+
+.stat-card:nth-child(2) {
+    border-color: var(--orange);
+}
+
+.stat-card h2 {
+    margin: 0 0 8px;
+    color: var(--green);
+}
+
+.stat-card p {
+    margin: 0;
+    color: var(--white);
+}
+
+
+/* Profile actions */
+
+.actions {
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+button {
+    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--black);
+    background-color: var(--purple);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s,
+        transform 0.2s;
+}
+
+button:hover {
+    background-color: var(--cyan);
+    border-color: var(--white);
+    transform: translateY(-2px);
+}
+
+button:focus-visible {
+    outline: 3px solid var(--cyan);
+    outline-offset: 3px;
+}
+
+#editProfileButton {
+    color: var(--white);
+    background-color: var(--purple);
+}
+
+#editProfileButton:hover {
+    color: var(--black);
+    background-color: var(--cyan);
+}
+
+#logoutButton {
+    color: var(--black);
+    background-color: var(--orange);
+}
+
+#logoutButton:hover {
+    background-color: var(--pink);
+}
+
+
+/* Edit profile popup */
+
+dialog {
+    width: 90%;
+    max-width: 400px;
+    padding: 25px;
+    color: var(--white);
+    background-color: var(--dark-gray);
+    border: 2px solid var(--purple);
+    border-radius: 10px;
+    box-shadow: 0 0 25px rgba(94, 87, 255, 0.6);
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+dialog h2 {
+    margin-top: 0;
+    color: var(--cyan);
+}
+
+dialog form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+dialog label {
+    color: var(--white);
+    font-weight: bold;
+}
+
+dialog input,
+dialog textarea {
+    padding: 10px;
+    font: inherit;
+    color: var(--white);
+    background-color: var(--medium-gray);
+    border: 2px solid var(--purple);
+    border-radius: 5px;
+}
+
+dialog input:focus,
+dialog textarea:focus {
+    border-color: var(--cyan);
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+dialog textarea {
+    resize: vertical;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.dialog-actions button[type="submit"] {
+    color: var(--black);
+    background-color: var(--green);
+}
+
+.dialog-actions button[type="submit"]:hover {
+    background-color: var(--cyan);
+}
+
+#cancelEditButton {
+    color: var(--black);
+    background-color: var(--pink);
+}
+
+#cancelEditButton:hover {
+    background-color: var(--orange);
+}
