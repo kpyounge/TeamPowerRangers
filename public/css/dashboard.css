@@ -16,6 +16,16 @@
     --row-bg: #000000;
 }
 
+/* Light mode override. Toggled by setting data-theme="light" on <html>
+   (see theme.js). The brand accent colors (purple/pink/orange/green/cyan)
+   stay the same in both themes - only the page background, main text
+   color, and habit-row pill color flip. */
+:root[data-theme="light"] {
+    --color-bg: #FFFFFF;
+    --color-text: #000000;
+    --row-bg: #ECECEC;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -71,7 +81,7 @@ body {
     font-size: 0.85rem;
     white-space: nowrap;
     background-color: var(--color-purple);
-    color: var(--color-text);
+    color: #FFFFFF; /* always white - button is always on the purple brand color */
 }
 
 #logoutButton:hover, #refreshButton:hover {
@@ -104,7 +114,8 @@ body {
 
 .stack-section.evening h2,
 .stack-section.night h2 {
-    color: var(--color-text); /* white text reads better on purple/orange */
+    color: #FFFFFF; /* these sections are always a dark brand color,
+                        so this heading stays white in both themes */
 }
 
 .habit-list {
@@ -225,6 +236,7 @@ body {
 
 .modal-box {
     background-color: var(--color-purple);
+    color: #FFFFFF; /* always white - modal is always on the purple brand color */
     border-radius: 20px;
     padding: 24px;
     width: 90%;
@@ -269,8 +281,8 @@ body {
 
 #modalCancelBtn {
     background-color: transparent;
-    color: var(--color-text);
-    border: 1px solid var(--color-text);
+    color: #FFFFFF;
+    border: 1px solid #FFFFFF;
 }
 
 #modalSaveBtn {
@@ -282,6 +294,7 @@ body {
 .user-list {
     margin-top: 10px;
     background-color: var(--color-purple);
+    color: #FFFFFF; /* always white - this list sits on the purple brand color */
     border-radius: 16px;
     padding: 6px 16px;
 }
@@ -298,4 +311,62 @@ body {
 .loading-message {
     padding: 10px 4px;
     opacity: 0.8;
+}
+
+/* ---------- Light / dark mode toggle switch (Profile page) ---------- */
+.theme-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--row-bg);
+    border-radius: 16px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.theme-toggle-row span {
+    font-weight: 600;
+}
+
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.theme-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #555555;
+    border-radius: 28px;
+    transition: background-color 0.2s;
+}
+
+.theme-switch .slider::before {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.theme-switch input:checked + .slider {
+    background-color: var(--color-cyan);
+}
+
+.theme-switch input:checked + .slider::before {
+    transform: translateX(24px);
 }

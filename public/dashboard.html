@@ -4,14 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Habit Stacks</title>
+    <!-- Apply whichever theme (light/dark) was last chosen on the
+         Profile page, before the stylesheet below even renders, so
+         the page doesn't "flash" the wrong theme for a moment. -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
+      <!-- Light / dark mode toggle -->
+      <div class="theme-toggle-row">
+        <span>Light / Dark Mode</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
     <div class="container">
         <div class="header">
             <h1>Habit Stacks</h1>
             <div class="header-links">
-                <a href="profile.html">Profile</a>
+                <a href="/profile">Profile</a>
                 <button id="logoutButton">Log Out</button>
             </div>
         </div>
@@ -55,6 +72,7 @@
     </div>
 
     <script src="/js/datamodel.js"></script>
+    <script src="/js/theme.js"></script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>

@@ -3,73 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile Page</title>
-    <link rel="stylesheet" href="css/profile.css">
+    <title>Profile</title>
+    <!-- Apply whichever theme (light/dark) was last chosen, before the
+         stylesheet below even renders, so the page doesn't "flash" the
+         wrong theme for a moment. -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
+    <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
-    <a href="dashboard.html" class="dashboard-link"> Return to Dashboard </a>
-
-    <div class="profile-container">
-        <img src="images/default-avatar.png" width="120" height="120" class="profile-picture">
-        <h1 id="username">Username</h1>
-        <p id="accountCreationDate" class="account-date">Account created: January 1, 2026</p>
-        <p id="bio">Bio</p>
-    </div>
-
-    <div class="summary-container">
-        <div class="stat-card">
-            <h2 id="activeHabits">0</h2>
-            <p>Active Habits</p>
+    <div class="container">
+        <div class="header">
+            <h1>Profile</h1>
+            <div class="header-links">
+                <a href="/dashboard">Back to Stacks</a>
+                <button id="refreshButton">Refresh List</button>
+                <button id="logoutButton">Log Out</button>
+            </div>
         </div>
 
-        <div class="stat-card">
-            <h2 id="currentStreak">0</h2>
-            <p>Day Streak</p>
-        </div> 
+        <!-- Light / dark mode toggle -->
+        <div class="theme-toggle-row">
+            <span>Light / Dark Mode</span>
+            <label class="theme-switch">
+                <input type="checkbox" id="themeToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Demonstrates calling a JWT-protected route (/api/users) from
+             an internal page, with the token attached for authorization. -->
+        <p>Registered accounts (protected route demo):</p>
+        <div class="user-list" id="userList"></div>
     </div>
 
-    <div class="actions">
-        <button id="editProfileButton" type="button">
-            Edit Profile
-        </button>
-
-        <button id="logoutButton" type="button">
-            Log Out
-        </button>
-    </div>
-
-    <dialog id="editProfileDialog">
-        <form id="editProfileForm">
-            <h2>Edit Profile</h2>
-
-            <label for="usernameInput">Username</label>
-            <input
-                type="text"
-                id="usernameInput"
-                name="username"
-                required
-            >
-
-            <label for="bioInput">Bio</label>
-            <textarea
-                id="bioInput"
-                name="bio"
-                rows="4"
-            ></textarea>
-
-            <div class="dialog-actions">
-                <button type="button" id="cancelEditButton">
-                    Cancel
-                </button>
-
-                <button type="submit">
-                    Save Changes
-                </button>
-            </div>
-        </form>
-    </dialog>
-    
-    <script src="js/datamodel.js"></script>
-    <script src="js/profile.js"></script>
+    <script src="/js/datamodel.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/profile.js"></script>
 </body>
 </html>

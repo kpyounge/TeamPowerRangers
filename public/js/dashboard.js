@@ -173,3 +173,13 @@ function saveNewHabit() {
     closeModal();
     renderStacks();
 }
+ //////////////////////////////////////////
+    //LIGHT / DARK MODE TOGGLE
+    //////////////////////////////////////////
+    // Set the switch's starting position to match whatever theme is
+    // currently applied (checked = light, unchecked = dark).
+    themeToggle.checked = Theme.get() === 'light';
+
+    themeToggle.addEventListener('change', () => {
+        Theme.apply(themeToggle.checked ? 'light' : 'dark');
+    });
