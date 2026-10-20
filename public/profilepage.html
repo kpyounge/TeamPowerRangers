@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+    <a href="dashboard.html" class="dashboard-link"> Return to Dashboard </a>
+
+    <div class="profile-container">
+        <img src="images/default-avatar.png" width="120" height="120" class="profile-picture">
+        <h1 id="username">Username</h1>
+        <p id="accountCreationDate" class="account-date">Account created: January 1, 2026</p>
+        <p id="bio">Bio</p>
+    </div>
+
+    <div class="summary-container">
+        <div class="stat-card">
+            <h2 id="activeHabits">0</h2>
+            <p>Active Habits</p>
+        </div>
+
+        <div class="stat-card">
+            <h2 id="currentStreak">0</h2>
+            <p>Day Streak</p>
+        </div> 
+    </div>
+
+    <div class="actions">
+        <button id="editProfileButton" type="button">
+            Edit Profile
+        </button>
+
+        <button id="logoutButton" type="button">
+            Log Out
+        </button>
+    </div>
+
+    <dialog id="editProfileDialog">
+        <form id="editProfileForm">
+            <h2>Edit Profile</h2>
+
+            <label for="usernameInput">Username</label>
+            <input
+                type="text"
+                id="usernameInput"
+                name="username"
+                required
+            >
+
+            <label for="bioInput">Bio</label>
+            <textarea
+                id="bioInput"
+                name="bio"
+                rows="4"
+            ></textarea>
+
+            <div class="dialog-actions">
+                <button type="button" id="cancelEditButton">
+                    Cancel
+                </button>
+
+                <button type="submit">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </dialog>
+    
+    <script src="js/datamodel.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>
