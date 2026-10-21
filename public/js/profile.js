@@ -1,65 +1,119 @@
 ////////////////////////////////////////////////////////////////
-//PROFILE.JS
-//Controller for the Profile page. This is where the Sprint 1
-//requirement "invoke a protected route from an internal page" is
-//demonstrated: it calls GET /api/users, which requires a valid
-//JWT, via DataModel.getUsers().
+// PROFILE.JS
+// Controls authentication, profile editing, theme selection,
+// and logout functionality on the Profile page.
 ////////////////////////////////////////////////////////////////
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
 
-    //////////////////////////////////////////
-    //JWT CHECK - redirect to logon if missing
-    //////////////////////////////////////////
-    const token = localStorage.getItem('jwtToken');
+    ////////////////////////////////////////////////////////////
+    // JWT CHECK
+    ////////////////////////////////////////////////////////////
+
+    const token = localStorage.getItem("jwtToken");
+
     if (!token) {
-        window.location.href = '/';
+        window.location.href = "/";
         return;
     }
+
     DataModel.setToken(token);
 
-    //////////////////////////////////////////
-    //ELEMENTS + EVENT LISTENERS
-    //////////////////////////////////////////
-    const logoutButton = document.getElementById('logoutButton');
-    const refreshButton = document.getElementById('refreshButton');
-    const themeToggle = document.getElementById('themeToggle');
 
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('jwtToken');
-        window.location.href = '/';
+    ////////////////////////////////////////////////////////////
+    // GET HTML ELEMENTS
+    ////////////////////////////////////////////////////////////
+
+    const username =
+        document.getElementById("username");
+
+    const bio =
+        document.getElementById("bio");
+
+    const editProfileButton =
+        document.getElementById("editProfileButton");
+
+    const logoutButton =
+        document.getElementById("logoutButton");
+
+    const editProfileDialog =
+        document.getElementById("editProfileDialog");
+
+    const editProfileForm =
+        document.getElementById("editProfileForm");
+
+    const usernameInput =
+        document.getElementById("usernameInput");
+
+    const bioInput =
+        document.getElementById("bioInput");
+
+    const cancelEditButton =
+        document.getElementById("cancelEditButton");
+
+    const themeToggle =
+        document.getElementById("themeToggle");
+
+
+    ////////////////////////////////////////////////////////////
+    // OPEN EDIT PROFILE POPUP
+    ////////////////////////////////////////////////////////////
+
+    editProfileButton.addEventListener("click", () => {
+        usernameInput.value = username.textContent.trim();
+        bioInput.value = bio.textContent.trim();
+
+        editProfileDialog.showModal();
     });
 
-    refreshButton.addEventListener('click', () => renderUserList());
 
-    //////////////////////////////////////////
-    //LIGHT / DARK MODE TOGGLE
-    //////////////////////////////////////////
-    // Set the switch's starting position to match whatever theme is
-    // currently applied (checked = light, unchecked = dark).
-    themeToggle.checked = Theme.get() === 'light';
+    ////////////////////////////////////////////////////////////
+    // CANCEL PROFILE EDIT
+    ////////////////////////////////////////////////////////////
 
-    themeToggle.addEventListener('change', () => {
-        Theme.apply(themeToggle.checked ? 'light' : 'dark');
+    cancelEditButton.addEventListener("click", () => {
+        editProfileDialog.close();
     });
 
-    //////////////////////////////////////////
-    //INITIAL RENDER
-    //////////////////////////////////////////
-    renderUserList();
+
+    ////////////////////////////////////////////////////////////
+    // SAVE PROFILE CHANGES
+    ////////////////////////////////////////////////////////////
+
+    editProfileForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const newUsername = usernameInput.value.trim();
+        const newBio = bioInput.value.trim();
+
+        username.textContent = newUsername;
+        bio.textContent = newBio;
+
+        editProfileDialog.close();
+    });
+
+
+    ////////////////////////////////////////////////////////////
+    // LIGHT / DARK MODE
+    ////////////////////////////////////////////////////////////
+
+    themeToggle.checked = Theme.get() === "light";
+
+    themeToggle.addEventListener("change", () => {
+        const selectedTheme =
+            themeToggle.checked ? "light" : "dark";
+
+        Theme.apply(selectedTheme);
+    });
+
+
+    ////////////////////////////////////////////////////////////
+    // LOG OUT
+    ////////////////////////////////////////////////////////////
+
+    logoutButton.addEventListener("click", () => {
+        localStorage.removeItem("jwtToken");
+        window.location.href = "/";
+    });
+
 });
-
-async function renderUserList() {
-    const userListElement = document.getElementById('userList');
-    userListElement.innerHTML = '<div class="loading-message">Loading user list...</div>';
-
-    const users = await DataModel.getUsers();
-
-    userListElement.innerHTML = '';
-    users.forEach(user => {
-        const userItem = document.createElement('div');
-        userItem.classList.add('user-item');
-        userItem.textContent = user;
-        userListElement.appendChild(userItem);
-    });
-}
