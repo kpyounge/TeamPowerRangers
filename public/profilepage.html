@@ -4,9 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Page</title>
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
+
     <link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
+        <!-- Light / dark mode toggle -->
+    <div class="theme-toggle-row">
+        <span>Light / Dark Mode</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <a href="dashboard.html" class="dashboard-link"> Return to Dashboard </a>
 
     <div class="profile-container">
@@ -71,5 +87,6 @@
     
     <script src="js/datamodel.js"></script>
     <script src="js/profile.js"></script>
+    <script src="js/theme.js"></script>
 </body>
 </html>
