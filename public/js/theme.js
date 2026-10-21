@@ -36,3 +36,17 @@ const Theme = {
         return next;
     }
 };
+// Wire up the toggle (if this page has one) once the page is ready.
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('themeToggle');
+    if (!toggle) return;
+
+    // Checked = light mode. Match the switch to the saved theme.
+    toggle.checked = Theme.get() === 'light';
+
+    // Set the theme from the switch's state (not Theme.toggle(), so
+    // it can't get out of sync with the checkbox).
+    toggle.addEventListener('change', () => {
+        Theme.apply(toggle.checked ? 'light' : 'dark');
+    });
+});

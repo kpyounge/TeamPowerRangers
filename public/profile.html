@@ -16,6 +16,14 @@
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
+    <!-- Light / dark mode toggle -->
+    <div class="theme-toggle-row">
+        <span>Light / Dark Mode</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
     <div class="container">
         <div class="header">
             <h1>Profile</h1>
@@ -26,14 +34,7 @@
             </div>
         </div>
 
-        <!-- Light / dark mode toggle -->
-        <div class="theme-toggle-row">
-            <span>Light / Dark Mode</span>
-            <label class="theme-switch">
-                <input type="checkbox" id="themeToggle">
-                <span class="slider"></span>
-            </label>
-        </div>
+        
 
         <!-- Demonstrates calling a JWT-protected route (/api/users) from
              an internal page, with the token attached for authorization. -->
