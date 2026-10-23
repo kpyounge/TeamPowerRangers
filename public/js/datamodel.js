@@ -67,6 +67,62 @@ const DataModel = (function () {
             }
         },
 
+        //fetch the logged-in user's profile
+        getCurrentUser: async function () {
+            if (!token) {
+                console.error("Token is not set.");
+                return null;
+            }
+            try {
+                const response = await fetch("/api/users/me", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": token,
+                        "Content-Type": "application/json"
+                    }
+                });
+                if (!response.ok) {
+                    console.error("Error fetching current user:", response.status);
+                    return null;
+                }
+                const data = await response.json();
+                return data.currentUser || null;
+            } catch (error) {
+                console.error("Error fetching current user:", error);
+                return null;
+            }
+        },
+
+        //save the username, first name and last name.
+        //always resolves to { ok: true, user } or { ok: false, error }
+        updateProfile: async function (profile) {
+            if (!token) {
+                return { ok: false, error: "Not logged in." };
+            }
+            try {
+                const response = await fetch("/api/users/me", {
+                    method: "PATCH",
+                    headers: {
+                        "Authorization": token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(profile)
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    return { ok: false, error: data.message || "Could not save changes." };
+                }
+                // The server issues a fresh token because the username is inside it
+                if (data.token) {
+                    token = data.token;
+                }
+                return { ok: true, user: data.currentUser, token: data.token };
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                return { ok: false, error: "Network error. Please try again." };
+            }
+        },
+
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
         //AND SEND DATA TO THE SERVER AS NEEDED
     };

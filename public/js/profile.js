@@ -4,7 +4,7 @@
 // and logout functionality on the Profile page.
 ////////////////////////////////////////////////////////////////
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
     ////////////////////////////////////////////////////////////
     // JWT CHECK
@@ -24,35 +24,48 @@ document.addEventListener("DOMContentLoaded", () => {
     // GET HTML ELEMENTS
     ////////////////////////////////////////////////////////////
 
-    const username =
-        document.getElementById("username");
+    const firstname = document.getElementById("firstname");
+    const accountCreationDate = document.getElementById("accountCreationDate");
 
-    const bio =
-        document.getElementById("bio");
+    const editProfileButton = document.getElementById("editProfileButton");
+   
+    const logoutButton = document.getElementById("logoutButton");
 
-    const editProfileButton =
-        document.getElementById("editProfileButton");
+    const editProfileDialog = document.getElementById("editProfileDialog");
+   
+    const editProfileForm = document.getElementById("editProfileForm");
+    const usernameInput = document.getElementById("usernameInput");
+    const firstnameInput = document.getElementById("firstnameInput");
+    const lastnameInput = document.getElementById("lastnameInput");
+    const cancelEditButton = document.getElementById("cancelEditButton");
+    const saveEditButton = document.getElementById("saveEditButton");
+    const editError = document.getElementById("editError");
+    const themeToggle = document.getElementById("themeToggle");
 
-    const logoutButton =
-        document.getElementById("logoutButton");
+////////////////////////////////////////////////////////////
+    // SHOW USER INFO ON THE PAGE
+    ////////////////////////////////////////////////////////////
 
-    const editProfileDialog =
-        document.getElementById("editProfileDialog");
+    let currentUser = null;
 
-    const editProfileForm =
-        document.getElementById("editProfileForm");
+    function renderUser(user) {
+        firstname.textContent = user.firstname;
 
-    const usernameInput =
-        document.getElementById("usernameInput");
+        if (user.created_at) {
+            const created = new Date(user.created_at).toLocaleDateString(
+                undefined,
+                { year: "numeric", month: "long", day: "numeric" }
+            );
+            accountCreationDate.textContent = `Account created: ${created}`;
+        }
+    }
 
-    const bioInput =
-        document.getElementById("bioInput");
+    // Load the logged-in user's info when the page opens
+    currentUser = await DataModel.getCurrentUser();
 
-    const cancelEditButton =
-        document.getElementById("cancelEditButton");
-
-    const themeToggle =
-        document.getElementById("themeToggle");
+    if (currentUser) {
+        renderUser(currentUser);
+    }
 
 
     ////////////////////////////////////////////////////////////
@@ -60,9 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
     ////////////////////////////////////////////////////////////
 
     editProfileButton.addEventListener("click", () => {
-        usernameInput.value = username.textContent.trim();
-        bioInput.value = bio.textContent.trim();
+        if (!currentUser) return;
 
+        usernameInput.value = currentUser.username || "";
+        firstnameInput.value = currentUser.firstname || "";
+        lastnameInput.value = currentUser.lastname || "";
+
+        editError.hidden = true;
         editProfileDialog.showModal();
     });
 
@@ -80,15 +97,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // SAVE PROFILE CHANGES
     ////////////////////////////////////////////////////////////
 
-    editProfileForm.addEventListener("submit", (event) => {
+    editProfileForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
-        const newUsername = usernameInput.value.trim();
-        const newBio = bioInput.value.trim();
+        saveEditButton.disabled = true;
 
-        username.textContent = newUsername;
-        bio.textContent = newBio;
+        const result = await DataModel.updateProfile({
+            username: usernameInput.value.trim(),
+            firstname: firstnameInput.value.trim(),
+            lastname: lastnameInput.value.trim()
+        });
 
+        saveEditButton.disabled = false;
+
+        if (!result.ok) {
+            editError.textContent = result.error;
+            editError.hidden = false;
+            return;
+        }
+
+        // Keep the refreshed token so the new username stays logged in
+        if (result.token) {
+            localStorage.setItem("jwtToken", result.token);
+        }
+
+        // Only update the page after the server confirms the save
+        currentUser = result.user;
+        renderUser(currentUser);
         editProfileDialog.close();
     });
 

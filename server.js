@@ -175,6 +175,77 @@ app.get('/api/users', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Error retrieving usernames.' });
     }
 });
+
+// Route: Get the logged-in user's profile (never returns the password)
+app.get('/api/users/me', authenticateToken, async (req, res) => {
+    try {
+        const connection = await createConnection();
+
+        const [rows] = await connection.execute(
+            'SELECT username, firstname, lastname, birthday, theme, created_at FROM user WHERE username = ?',
+            [req.user.username]
+        );
+
+        await connection.end();
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ currentUser: rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error retrieving profile.' });
+    }
+});
+
+// Route: Update the logged-in user's username, first name and last name
+app.patch('/api/users/me', authenticateToken, async (req, res) => {
+    const { username, firstname, lastname } = req.body;
+
+    const valid = [username, firstname, lastname].every(
+        (v) => typeof v === 'string' && v.trim().length > 0
+    );
+    if (!valid) {
+        return res.status(400).json({
+            message: 'Username, first name, and last name are required.'
+        });
+    }
+
+    const newUsername = username.trim();
+
+    try {
+        const connection = await createConnection();
+
+        await connection.execute(
+            'UPDATE user SET username = ?, firstname = ?, lastname = ? WHERE username = ?',
+            [newUsername, firstname.trim(), lastname.trim(), req.user.username]
+        );
+
+        const [rows] = await connection.execute(
+            'SELECT username, firstname, lastname, birthday, theme, created_at FROM user WHERE username = ?',
+            [newUsername]
+        );
+
+        await connection.end();
+
+        // The token contains the username, so issue a new one
+        // if it changed; otherwise the old token would stop working.
+        const token = jwt.sign(
+            { username: newUsername },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.status(200).json({ currentUser: rows[0], token });
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'That username is already taken.' });
+        }
+        console.error(error);
+        res.status(500).json({ message: 'Error updating profile.' });
+    }
+});
 //////////////////////////////////////
 //END ROUTES TO HANDLE API REQUESTS
 //////////////////////////////////////

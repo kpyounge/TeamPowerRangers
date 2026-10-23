@@ -27,9 +27,8 @@
 
     <div class="profile-container">
         <img src="images/default-avatar.png" width="120" height="120" class="profile-picture">
-        <h1 id="username">Username</h1>
-        <p id="accountCreationDate" class="account-date">Account created: January 1, 2026</p>
-        <p id="bio">Bio</p>
+        <h1 id="firstname"></h1>
+        <p id="accountCreationDate" class="account-date">Account created: </p>
     </div>
 
     <div class="summary-container">
@@ -59,26 +58,22 @@
             <h2>Edit Profile</h2>
 
             <label for="usernameInput">Username</label>
-            <input
-                type="text"
-                id="usernameInput"
-                name="username"
-                required
-            >
+            <input type="text" id="usernameInput" name="username" required>
 
-            <label for="bioInput">Bio</label>
-            <textarea
-                id="bioInput"
-                name="bio"
-                rows="4"
-            ></textarea>
+            <label for="firstnameInput">First Name</label>
+            <input type="text" id="firstnameInput" name="firstname" required>
+
+            <label for="lastnameInput">Last Name</label>
+            <input type="text" id="lastnameInput" name="lastname" required>
+
+            <p id="editError" role="alert" hidden></p>
 
             <div class="dialog-actions">
                 <button type="button" id="cancelEditButton">
                     Cancel
                 </button>
 
-                <button type="submit">
+                <button type="submit" id="saveEditButton">
                     Save Changes
                 </button>
             </div>
