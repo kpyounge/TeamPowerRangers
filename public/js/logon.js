@@ -22,14 +22,16 @@ createAccountTab.addEventListener('click', () => {
 // Logon form submission
 logonForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const email = document.getElementById('login-email').value;
+    const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
+
+
 
     try {
         const response = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ username, password }),
         });
 
         const result = await response.json();
@@ -50,22 +52,33 @@ logonForm.addEventListener('submit', async (event) => {
 // Create account form submission
 createAccountForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const email = document.getElementById('create-email').value;
+    const firstname = document.getElementById('create-firstname').value;
+    const lastname = document.getElementById('create-lastname').value;
+    const username= document.getElementById('create-username').value;
+    const birthday= document.getElementById('create-birthday').value;
     const password = document.getElementById('create-password').value;
+    const confirmPassword = document.getElementById('create-confirm-password').value;
+
+    if (password !== confirmPassword) {
+        messageEl.textContent = 'Passwords do not match.';
+        messageEl.classList.remove('success');
+        messageEl.classList.add('error');
+        return;
+    }
 
     try {
         const response = await fetch('/api/create-account', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ firstname, lastname, username, birthday, password }),
         });
 
         const result = await response.json();
         if (response.ok) {
-            messageEl.textContent = 'Account created successfully! You can now log in.';
+            messageEl.textContent = 'Account created successfully!';
             messageEl.classList.remove('error');
             messageEl.classList.add('success');
-            document.getElementById('login-email').value = email;
+            document.getElementById('login-username').value = username;
             document.getElementById('login-password').value = password;
             logonForm.classList.add('active-form');
             createAccountForm.classList.remove('active-form');

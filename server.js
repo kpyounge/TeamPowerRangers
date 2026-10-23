@@ -59,10 +59,10 @@ async function authenticateToken(req, res, next) {
         try {
             const connection = await createConnection();
 
-            // Query the database to verify that the email is associated with an active account
+            // Query the database to verify that the username is associated with an active account
             const [rows] = await connection.execute(
-                'SELECT email FROM user WHERE email = ?',
-                [decoded.email]
+                'SELECT username FROM user WHERE username = ?',
+                [decoded.username]
             );
 
             await connection.end();  // Close connection
@@ -71,7 +71,7 @@ async function authenticateToken(req, res, next) {
                 return res.status(403).json({ message: 'Account not found or deactivated.' });
             }
 
-            req.user = decoded;  // Save the decoded email for use in the route
+            req.user = decoded;  // Save the decoded username for use in the route
             next();  // Proceed to the next middleware or route handler
         } catch (dbError) {
             console.error(dbError);
@@ -89,10 +89,10 @@ async function authenticateToken(req, res, next) {
 //////////////////////////////////////
 // Route: Create Account
 app.post('/api/create-account', async (req, res) => {
-    const { email, password } = req.body;
+    const { firstname, lastname, username, birthday, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required.' });
+    if (!firstname || !lastname || !username || !password) {
+        return res.status(400).json({ message: 'All fields are required.' });
     }
 
     try {
@@ -100,8 +100,8 @@ app.post('/api/create-account', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);  // Hash password
 
         const [result] = await connection.execute(
-            'INSERT INTO user (email, password) VALUES (?, ?)',
-            [email, hashedPassword]
+            'INSERT INTO user (username, password, firstname, lastname, birthday) VALUES (?, ?, ?, ?, ?)',
+            [username, hashedPassword, firstname, lastname, birthday || null]
         );
 
         await connection.end();  // Close connection
@@ -109,7 +109,7 @@ app.post('/api/create-account', async (req, res) => {
         res.status(201).json({ message: 'Account created successfully!' });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
-            res.status(409).json({ message: 'An account with this email already exists.' });
+            res.status(409).json({ message: 'An account with this username already exists.' });
         } else {
             console.error(error);
             res.status(500).json({ message: 'Error creating account.' });
@@ -119,35 +119,35 @@ app.post('/api/create-account', async (req, res) => {
 
 // Route: Logon
 app.post('/api/login', async (req, res) => {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required.' });
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required.' });
     }
 
     try {
         const connection = await createConnection();
 
         const [rows] = await connection.execute(
-            'SELECT * FROM user WHERE email = ?',
-            [email]
+            'SELECT * FROM user WHERE username = ?',
+            [username]
         );
 
         await connection.end();  // Close connection
 
         if (rows.length === 0) {
-            return res.status(401).json({ message: 'Invalid email or password.' });
+            return res.status(401).json({ message: 'Invalid username or password.' });
         }
 
         const user = rows[0];
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(401).json({ message: 'Invalid email or password.' });
+            return res.status(401).json({ message: 'Invalid username or password.' });
         }
 
         const token = jwt.sign(
-            { email: user.email },
+            { username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -159,20 +159,20 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Route: Get All Email Addresses
+// Route: Get All username Addresses
 app.get('/api/users', authenticateToken, async (req, res) => {
     try {
         const connection = await createConnection();
 
-        const [rows] = await connection.execute('SELECT email FROM user');
+        const [rows] = await connection.execute('SELECT username FROM user');
 
         await connection.end();  // Close connection
 
-        const emailList = rows.map((row) => row.email);
-        res.status(200).json({ emails: emailList });
+        const usernameList = rows.map((row) => row.username);
+        res.status(200).json({ usernames: usernameList });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error retrieving email addresses.' });
+        res.status(500).json({ message: 'Error retrieving usernames.' });
     }
 });
 //////////////////////////////////////

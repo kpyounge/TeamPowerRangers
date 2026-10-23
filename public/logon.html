@@ -10,39 +10,72 @@
 
 <body>
     <div class="container">
-        <h1>Habit Stacker</h1>
-        <h2> Build Your Dream Routine</h2>
+        <img src="images/habit stacker logo.png" alt="Habit Stacker Logo" class="login-logo">
         
+    
+    <div class="form-tabs">
+        <button type="button" id="login-tab" class="tab active">Log In</button>
+        <button type="button" id="create-account-tab" class="tab">Sign Up</button>
+    </div>
 
-        <div id="form-container">
-            <!-- Logon Form -->
-            <form id="logon-form" class="active-form">
-                <label for="login-email">Email:</label>
-                <input type="email" id="login-email" placeholder="Enter your email" required>
+    <div id="form-container">
+        <!-- Logon Form -->
+        <form id="logon-form" class="active-form">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" placeholder="Enter your username" required>
 
-                <label for="login-password">Password:</label>
-                <input type="password" id="login-password" placeholder="Enter your password" required>
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" placeholder="Enter your password" required>
 
-                <button type="submit" class="button">Log In</button>
+            <button type="submit" class="button">Log In</button>
 
-                <button type="button" class="signup-link" id="create-account-tab">sign up</button>
-            </form>
+            
+        </form>
 
-            <!-- Create Account Form -->
-            <form id="create-account-form">
-                <label for="create-email">Email:</label>
-                <input type="email" id="create-email" placeholder="Enter your email" required>
+        <!-- Create Account Form -->
+        <form id="create-account-form">
 
-                <label for="create-password">Password:</label>
-                <input type="password" id="create-password" placeholder="Create your password" required>
 
-                <button type="submit" class="button">Create Account</button>
+        <div class="form-row">
+            <div class="form-field">
+                <label for="create-firstname">First Name</label>
+                <input type="text" id="create-firstname" placeholder="First name" required>
+        </div>
+        <div class="form-field">
+            <label for="create-lastname">Last Name</label>
+            <input type="text" id="create-lastname" placeholder="Last name" required>
+        </div>
+    </div>
 
-                <button type="button" class="signup-link" id="login-tab">
-                    back to log
-                </button>
+    <div class="form-row">
+        <div class="form-field">
+            <label for="create-username">Username</label>
+            <input type="text" id="create-username" placeholder="Username" required>
+        </div>
+        <div class="form-field">
+            <label for="create-birthday">Birthday (optional)</label>
+            <input type="date" id="create-birthday">
+        </div>
+    </div>
 
-            </form>
+    <div class="form-row">
+        <div class="form-field">
+            <label for="create-password">Password</label>
+            <input type="password" id="create-password" placeholder="Password" required>
+        </div>
+        <div class="form-field">
+            <label for="create-confirm-password">Confirm Password</label>
+            <input type="password" id="create-confirm-password" placeholder="Confirm password" required>
+        </div>
+    </div>
+
+    <button type="submit" class="button">Create Account</button>
+    
+
+</form>
+          
+
+    
 
             <p id="message" class="message"></p>
         </div>
