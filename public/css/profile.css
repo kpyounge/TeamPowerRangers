@@ -19,7 +19,7 @@
 
 body {
     margin: 0;
-    padding: 40px 0;
+    padding: 0 0 40px;
     font-family: "Segoe UI", Arial, sans-serif;
     color: var(--color-text);
     background-color: var(--color-bg);
@@ -144,9 +144,9 @@ body {
 /* Return to dashboard */
 
 .dashboard-link {
-    position: absolute;
-    top: 24px;
-    left: 24px;
+    display: block;
+    width: fit-content;
+    margin: 24px 24px 24px;
     padding: 8px 16px;
     color: var(--color-text);
     background-color: var(--color-purple);
