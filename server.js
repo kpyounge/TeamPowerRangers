@@ -182,7 +182,7 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture FROM user WHERE username = ?',
             [req.user.username]
         );
 
@@ -201,7 +201,7 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
 
 // Route: Update the logged-in user's username, first name and last name
 app.patch('/api/users/me', authenticateToken, async (req, res) => {
-    const { username, firstname, lastname } = req.body;
+    const { username, firstname, lastname, profile_picture } = req.body;
 
     const valid = [username, firstname, lastname].every(
         (v) => typeof v === 'string' && v.trim().length > 0
@@ -218,12 +218,12 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         await connection.execute(
-            'UPDATE user SET username = ?, firstname = ?, lastname = ? WHERE username = ?',
-            [newUsername, firstname.trim(), lastname.trim(), req.user.username]
+            'UPDATE user SET username = ?, firstname = ?, lastname = ?, profile_picture = COALESCE(?, profile_picture) WHERE username = ?',
+            [newUsername, firstname.trim(), lastname.trim(), profile_picture ?? null, req.user.username]
         );
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture FROM user WHERE username = ?',
             [newUsername]
         );
 

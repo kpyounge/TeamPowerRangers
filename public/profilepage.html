@@ -26,7 +26,7 @@
     <a href="dashboard.html" class="dashboard-link"> Return to Dashboard </a>
 
     <div class="profile-container">
-        <img src="images/default-avatar.png" width="120" height="120" class="profile-picture">
+        <img id="profilePicture" src="images/default-avatar.png" width="120" height="120" class="profile-picture">
         <h1 id="firstname"></h1>
         <p id="accountCreationDate" class="account-date">Account created: </p>
     </div>
@@ -56,7 +56,11 @@
     <dialog id="editProfileDialog">
         <form id="editProfileForm">
             <h2>Edit Profile</h2>
-
+            <fieldset class="avatar-picker">
+                <legend>Profile Picture</legend>
+                <div id="profilePictureOptions" class="avatar-options"></div>
+            </fieldset>
+            
             <label for="usernameInput">Username</label>
             <input type="text" id="usernameInput" name="username" required>
 
