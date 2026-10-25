@@ -115,3 +115,15 @@ input {
     margin: 20px auto 30px auto;
     border-radius: 25px;
 }
+
+.forgot-link {
+    display: block;
+    margin: 10px auto 0 auto;
+    padding: 0;
+    background: none;
+    border: none;
+    color: white;
+    text-decoration: underline;
+    font-size: 14px;
+    cursor: pointer;
+}

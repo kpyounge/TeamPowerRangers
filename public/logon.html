@@ -29,7 +29,7 @@
 
             <button type="submit" class="button">Log In</button>
 
-            
+            <button type="button" class="forgot-link" id="forgot-password-link">Forgot password?</button>
         </form>
 
         <!-- Create Account Form -->
@@ -74,7 +74,44 @@
 
 </form>
           
+        <!-- Forgot Password Form -->
+        <form id="forgot-password-form">
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="forgot-username">Username</label>
+                    <input type="text" id="forgot-username" placeholder="Username" required>
+                </div>
+                <div class="form-field">
+                    <label for="forgot-birthday">Birthday</label>
+                    <input type="date" id="forgot-birthday" required>
+                </div>
+            </div>
 
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="forgot-firstname">First Name</label>
+                    <input type="text" id="forgot-firstname" placeholder="First name" required>
+                </div>
+                <div class="form-field">
+                    <label for="forgot-lastname">Last Name</label>
+                    <input type="text" id="forgot-lastname" placeholder="Last name" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label for="forgot-new-password">New Password</label>
+                    <input type="password" id="forgot-new-password" placeholder="New password" required>
+                </div>
+                <div class="form-field">
+                    <label for="forgot-confirm-password">Confirm New Password</label>
+                    <input type="password" id="forgot-confirm-password" placeholder="Confirm new password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="button">Reset Password</button>
+            <button type="button" class="forgot-link" id="back-to-login">Back to log in</button>
+        </form>
     
 
             <p id="message" class="message"></p>

@@ -159,6 +159,48 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Route: Forgot Password (verify identity, then set a new hashed password)
+app.post('/api/forgot-password', async (req, res) => {
+    const { username, firstname, lastname, birthday, newPassword, confirmPassword } = req.body;
+
+    if (!username || !firstname || !lastname || !birthday || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: 'All fields are required.' });
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        // All four details must match the same account
+        const [rows] = await connection.execute(
+            'SELECT username FROM user WHERE username = ? AND firstname = ? AND lastname = ? AND birthday = ?',
+            [username, firstname, lastname, birthday]
+        );
+
+        if (rows.length === 0) {
+            await connection.end();
+            return res.status(401).json({ message: 'The information you entered does not match an existing account.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await connection.execute(
+            'UPDATE user SET password = ? WHERE username = ?',
+            [hashedPassword, rows[0].username]
+        );
+
+        await connection.end();
+
+        res.status(200).json({ message: 'Password reset successfully!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error resetting password.' });
+    }
+});
+
 // Route: Get All username Addresses
 app.get('/api/users', authenticateToken, async (req, res) => {
     try {
