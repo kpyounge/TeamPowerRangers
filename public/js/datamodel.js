@@ -123,6 +123,55 @@ const DataModel = (function () {
             }
         },
 
+        //shared helper for the habit calls below.
+        //always resolves to { ok: true, data } or { ok: false, error, status }
+        habitRequest: async function (method, url, body) {
+            if (!token) {
+                return { ok: false, error: "Not logged in." };
+            }
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        "Authorization": token,
+                        "Content-Type": "application/json"
+                    }
+                };
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                const response = await fetch(url, options);
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    return { ok: false, error: data.message || "Something went wrong.", status: response.status };
+                }
+                return { ok: true, data: data };
+            } catch (error) {
+                console.error("Error in habit API call:", error);
+                return { ok: false, error: "Network error. Please try again." };
+            }
+        },
+
+        //fetch the logged-in user's habits, in stack order
+        getHabits: function () {
+            return this.habitRequest("GET", "/api/habits");
+        },
+
+        //add a habit: habit = { name, time, status }
+        createHabit: function (habit) {
+            return this.habitRequest("POST", "/api/habits", habit);
+        },
+
+        //save changes to a habit: habit = { name, time, status }
+        updateHabit: function (habitId, habit) {
+            return this.habitRequest("PATCH", "/api/habits/" + habitId, habit);
+        },
+
+        //delete a habit
+        deleteHabit: function (habitId) {
+            return this.habitRequest("DELETE", "/api/habits/" + habitId);
+        },
+
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
         //AND SEND DATA TO THE SERVER AS NEEDED
     };

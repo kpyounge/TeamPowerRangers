@@ -70,7 +70,40 @@
             </div>
         </div>
     </div>
-
+    <!-- "Edit / delete habit" pop-up. Same layout as the add pop-up;
+         dashboard.js fills it in with the habit that was clicked. -->
+         <div id="editHabitModal" class="modal-overlay hidden">
+            <div class="modal-box">
+                <h2>Edit Habit</h2>
+    
+                <label for="editHabitNameInput">Habit name</label>
+                <input type="text" id="editHabitNameInput">
+    
+                <label for="editHabitTimeInput">Stack</label>
+                <select id="editHabitTimeInput">
+                    <option value="morning">Morning</option>
+                    <option value="afternoon">Afternoon</option>
+                    <option value="evening">Evening</option>
+                    <option value="night">Night</option>
+                </select>
+    
+                <label for="editHabitStatusInput">Status</label>
+                <select id="editHabitStatusInput">
+                    <option value="working_on">Working On (new habit)</option>
+                    <option value="current">Current (already cemented)</option>
+                </select>
+    
+                <p id="editHabitError" class="modal-error" role="alert" hidden></p>
+    
+                <div class="modal-actions">
+                    <button id="editCancelBtn">Cancel</button>
+                    <button id="editSaveBtn">Save</button>
+                </div>
+    
+                <button id="deleteHabitBtn" class="delete-habit-btn">Delete Habit</button>
+            </div>
+        </div>
+        
     <script src="/js/datamodel.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/dashboard.js"></script>

@@ -289,7 +289,66 @@ body {
     background-color: var(--color-cyan);
     color: #000000;
 }
+/* ---------- Edit (pencil) button on each habit ---------- */
+.edit-btn {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    font-size: 1.15rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
 
+.edit-btn:hover,
+.edit-btn:focus-visible {
+    color: var(--color-cyan);
+}
+
+/* ---------- Edit habit pop-up extras ---------- */
+.modal-error {
+    margin: 12px 0 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    color: #B00020;
+    font-size: 0.9rem;
+}
+
+.modal-error[hidden] {
+    display: none;
+}
+
+.delete-habit-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 9px 18px;
+    border-radius: 20px;
+    border: 2px solid var(--color-pink);
+    background-color: transparent;
+    color: #FFFFFF;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.delete-habit-btn:hover,
+.delete-habit-btn:focus-visible {
+    background-color: var(--color-pink);
+}
+
+#editCancelBtn {
+    background-color: transparent;
+    color: #FFFFFF;
+    border: 1px solid #FFFFFF;
+}
+
+#editSaveBtn {
+    background-color: var(--color-cyan);
+    color: #000000;
+}
 /* ---------- Profile page (reuses this stylesheet) ---------- */
 .user-list {
     margin-top: 10px;
