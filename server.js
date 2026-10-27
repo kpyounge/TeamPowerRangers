@@ -59,9 +59,9 @@ async function authenticateToken(req, res, next) {
         try {
             const connection = await createConnection();
 
-            // Query the database to verify that the username is associated with an active account
+            // Query the database to verify that the userid is associated with an active account
             const [rows] = await connection.execute(
-                'SELECT username FROM user WHERE username = ?',
+                'SELECT user_id, username FROM user WHERE username = ?',
                 [decoded.username]
             );
 
@@ -71,7 +71,10 @@ async function authenticateToken(req, res, next) {
                 return res.status(403).json({ message: 'Account not found or deactivated.' });
             }
 
-            req.user = decoded;  // Save the decoded username for use in the route
+            req.user = {...
+                decoded,
+                user_id: rows[0].user_id
+          };  // Save the decoded username for use in the route
             next();  // Proceed to the next middleware or route handler
         } catch (dbError) {
             console.error(dbError);
@@ -147,7 +150,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { username: user.username },
+            { user_id: user.user_id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -260,17 +263,11 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         await connection.execute(
-            'UPDATE user SET username = ?, firstname = ?, lastname = ?, profile_picture = COALESCE(?, profile_picture) WHERE username = ?',
-            [newUsername, firstname.trim(), lastname.trim(), profile_picture ?? null, req.user.username]
+            'UPDATE user SET username = ?, firstname = ?, lastname = ?, profile_picture = COALESCE(?, profile_picture) WHERE user__id = ?',
+            [newUsername, firstname.trim(), lastname.trim(), profile_picture ?? null, req.user.user_id]
         );
 
-        // Habits are linked to the user by username, so carry them over to the new one
-        if (newUsername !== req.user.username) {
-            await connection.execute(
-                'UPDATE habit SET username = ? WHERE username = ?',
-                [newUsername, req.user.username]
-            );
-        }
+  
 
         const [rows] = await connection.execute(
             'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture FROM user WHERE username = ?',
@@ -300,7 +297,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
 // ---------- HABITS ----------
 const HABIT_TIMES = ['morning', 'afternoon', 'evening', 'night'];
 const HABIT_STATUSES = ['working_on', 'current'];
-const HABIT_COLUMNS = 'id, name, time_of_day AS time, status, sort_order';
+const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, time_of_day AS time, status, streak, sort_order';
 
 // Checks the name / stack / status sent from the add and edit forms.
 // Returns { error } or { name, time, status }.
@@ -326,8 +323,8 @@ app.get('/api/habits', authenticateToken, async (req, res) => {
     try {
         const connection = await createConnection();
         const [rows] = await connection.execute(
-            `SELECT ${HABIT_COLUMNS} FROM habit WHERE username = ? ORDER BY sort_order, id`,
-            [req.user.username]
+            `SELECT ${HABIT_COLUMNS} FROM habit WHERE user_id = ? ORDER BY sort_order, habit_id`,
+            [req.user.user_id]
         );
         await connection.end();
         res.status(200).json({ habits: rows });
@@ -348,17 +345,17 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         const [[max]] = await connection.execute(
-            'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE username = ?',
-            [req.user.username]
+            'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE user_id = ?',
+            [req.user.user_id]
         );
 
         const [result] = await connection.execute(
-            'INSERT INTO habit (username, name, time_of_day, status, sort_order) VALUES (?, ?, ?, ?, ?)',
-            [req.user.username, habit.name, habit.time, habit.status, max.maxOrder + 1]
+            'INSERT INTO habit (user_id, habit_name, time_of_day, status, sort_order) VALUES (?, ?, ?, ?, ?)',
+            [req.user.user_id, habit.name, habit.time, habit.status, max.maxOrder + 1]
         );
 
         const [rows] = await connection.execute(
-            `SELECT ${HABIT_COLUMNS} FROM habit WHERE id = ?`,
+            `SELECT ${HABIT_COLUMNS} FROM habit WHERE habit_id = ?`,
             [result.insertId]
         );
         await connection.end();
@@ -388,8 +385,8 @@ app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
 
         // Only the owner can edit a habit
         const [existing] = await connection.execute(
-            'SELECT time_of_day, sort_order FROM habit WHERE id = ? AND username = ?',
-            [habitId, req.user.username]
+            'SELECT time_of_day, sort_order FROM habit WHERE habit_id = ? AND user_id = ?',
+            [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
             await connection.end();
@@ -399,19 +396,19 @@ app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
         let sortOrder = existing[0].sort_order;
         if (existing[0].time_of_day !== habit.time) {
             const [[max]] = await connection.execute(
-                'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE username = ?',
-                [req.user.username]
+                'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE user_id = ?',
+                [req.user.user_id]
             );
             sortOrder = max.maxOrder + 1;
         }
 
         await connection.execute(
-            'UPDATE habit SET name = ?, time_of_day = ?, status = ?, sort_order = ? WHERE id = ? AND username = ?',
-            [habit.name, habit.time, habit.status, sortOrder, habitId, req.user.username]
+            'UPDATE habit SET habit_name = ?, time_of_day = ?, status = ?, sort_order = ? WHERE habit_id = ? AND user_id = ?',
+            [habit.name, habit.time, habit.status, sortOrder, habitId, req.user.user_id]
         );
 
         const [rows] = await connection.execute(
-            `SELECT ${HABIT_COLUMNS} FROM habit WHERE id = ?`,
+            `SELECT ${HABIT_COLUMNS} FROM habit WHERE habit_id = ?`,
             [habitId]
         );
         await connection.end();
@@ -433,8 +430,8 @@ app.delete('/api/habits/:id', authenticateToken, async (req, res) => {
     try {
         const connection = await createConnection();
         const [result] = await connection.execute(
-            'DELETE FROM habit WHERE id = ? AND username = ?',
-            [habitId, req.user.username]
+            'DELETE FROM habit WHERE habit_id = ? AND user_id = ?',
+            [habitId, req.user.user_id]
         );
         await connection.end();
 
