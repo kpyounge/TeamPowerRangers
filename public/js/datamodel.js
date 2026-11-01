@@ -172,6 +172,12 @@ const DataModel = (function () {
             return this.habitRequest("DELETE", "/api/habits/" + habitId);
         },
 
+        //save a new order for one stack: habitIds = every habit id in
+        //that stack, in the new top-to-bottom order
+        reorderHabits: function (habitIds) {
+            return this.habitRequest("PUT", "/api/habits/reorder", { ids: habitIds });
+        },
+
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
         //AND SEND DATA TO THE SERVER AS NEEDED
     };

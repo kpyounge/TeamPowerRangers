@@ -424,3 +424,85 @@ body {
 .theme-switch input:checked + .slider::before {
     transform: translateX(24px);
 }
+
+
+/* ===========================================================
+   Drag & drop reordering + in-progress vs existing habits
+   =========================================================== */
+
+.habit-row {
+    position: relative;
+}
+
+/* ---------- In progress ("working on") vs existing ("current") ----------
+   In-progress habits get the emphasis: bold text plus an outline in the
+   theme's text color (white in dark mode, black in light mode).
+   Existing habits stay plain and regular weight. */
+.habit-row.working_on {
+    box-shadow: 0 0 0 3px var(--color-text);
+}
+
+.habit-row.working_on .habit-name {
+    font-weight: 800;
+}
+
+.habit-row.current .habit-name {
+    font-weight: 400;
+}
+
+/* ---------- Drag handle (three vertical dots) ---------- */
+.drag-handle {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: grab;
+    flex-shrink: 0;
+    touch-action: none;          /* lets touch screens drag instead of scroll */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+    color: var(--color-cyan);
+}
+
+/* The row being dragged follows the pointer */
+.habit-row.dragging {
+    z-index: 10;
+    opacity: 0.92;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.habit-row.working_on.dragging {
+    box-shadow: 0 0 0 3px var(--color-text), 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.habit-row.dragging .drag-handle {
+    cursor: grabbing;
+}
+
+body.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Black line showing where the dragged habit will land */
+.habit-row.drop-before::before,
+.habit-row.drop-after::after {
+    content: "";
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: #000000;
+}
+
+.habit-row.drop-before::before { top: -7px; }
+.habit-row.drop-after::after   { bottom: -7px; }

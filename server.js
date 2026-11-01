@@ -420,6 +420,73 @@ app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Route: Save a new order for one stack. The body is { ids: [...] }:
+// every habit id in that stack, in the new top-to-bottom order.
+// The stack's existing sort_order numbers are handed back out in the
+// new order, so the other stacks are never touched.
+app.put('/api/habits/reorder', authenticateToken, async (req, res) => {
+    const { ids } = req.body || {};
+
+    if (!Array.isArray(ids) || ids.length === 0 ||
+        !ids.every(Number.isInteger) || new Set(ids).size !== ids.length) {
+        return res.status(400).json({ message: 'A list of habit ids is required.' });
+    }
+
+    let connection;
+    try {
+        connection = await createConnection();
+
+        // Every id must belong to this user
+        const [rows] = await connection.execute(
+            `SELECT habit_id, time_of_day, sort_order FROM habit
+             WHERE user_id = ? AND habit_id IN (${ids.map(() => '?').join(',')})`,
+            [req.user.user_id, ...ids]
+        );
+        if (rows.length !== ids.length) {
+            return res.status(404).json({ message: 'Habit not found.' });
+        }
+
+        // ...and all be in the same stack
+        const stack = rows[0].time_of_day;
+        if (rows.some(r => r.time_of_day !== stack)) {
+            return res.status(400).json({ message: 'Habits must all be in the same stack.' });
+        }
+
+        // ...and be the whole stack, so every habit in it gets a new order
+        const [[count]] = await connection.execute(
+            'SELECT COUNT(*) AS total FROM habit WHERE user_id = ? AND time_of_day = ?',
+            [req.user.user_id, stack]
+        );
+        if (Number(count.total) !== ids.length) {
+            return res.status(400).json({ message: 'Send every habit in the stack.' });
+        }
+
+        // Reuse the stack's own sort_order numbers, smallest first
+        const slots = rows.map(r => r.sort_order).sort((a, b) => a - b);
+
+        await connection.beginTransaction();
+        for (let i = 0; i < ids.length; i++) {
+            await connection.execute(
+                'UPDATE habit SET sort_order = ? WHERE habit_id = ? AND user_id = ?',
+                [slots[i], ids[i], req.user.user_id]
+            );
+        }
+        await connection.commit();
+
+        res.status(200).json({ message: 'Order saved.' });
+    } catch (error) {
+        if (connection) {
+            await connection.rollback().catch(() => {});
+        }
+        console.error(error);
+        res.status(500).json({ message: 'Error saving order.' });
+    } finally {
+        if (connection) {
+            await connection.end().catch(() => {});
+        }
+    }
+});
+
 // Route: Delete a habit
 app.delete('/api/habits/:id', authenticateToken, async (req, res) => {
     const habitId = Number(req.params.id);

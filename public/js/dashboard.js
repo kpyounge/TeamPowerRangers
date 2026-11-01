@@ -133,7 +133,10 @@ function renderStacks() {
 
 function renderHabitRow(habit) {
     const row = document.createElement('div');
-    row.className = `habit-row ${habit.completed ? 'completed' : ''}`;
+        // "working_on" (in progress) or "current" (existing) gets its own class
+    // so the CSS can style the two differently
+    row.className = `habit-row ${habit.status} ${habit.completed ? 'completed' : ''}`;
+    row.dataset.habitId = habit.id;
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -164,7 +167,148 @@ function renderHabitRow(habit) {
     editBtn.addEventListener('click', () => openEditModal(habit.id));
     row.appendChild(editBtn);
 
+        // Three vertical dots: press and drag to reorder
+    const handle = document.createElement('button');
+    handle.className = 'drag-handle';
+    handle.type = 'button';
+    handle.textContent = '\u22EE'; // three vertical dots
+    handle.title = 'Drag to reorder';
+    handle.setAttribute('aria-label', `Reorder ${habit.name}. Use the up and down arrow keys, or drag.`);
+    handle.addEventListener('pointerdown', (event) => startDrag(event, row));
+    handle.addEventListener('keydown', (event) => moveWithKeyboard(event, row));
+    row.appendChild(handle);
+
     return row;
+}
+
+//////////////////////////////////////////
+//DRAG & DROP REORDERING
+//////////////////////////////////////////
+// Press the three dots and drag a habit up or down within its stack.
+// While dragging, the row follows the pointer and a black line shows
+// where it will land. When the pointer is released the new order is
+// saved to the database. Works with mouse and touch.
+function startDrag(event, row) {
+    if (event.button > 0) {
+        return; // ignore right / middle click
+    }
+    event.preventDefault();
+
+    const list = row.parentElement;
+    const startY = event.clientY;
+    let dropTarget = null; // the row to drop in front of (null = the end)
+    let moved = false;
+
+    row.classList.add('dragging');
+    document.body.classList.add('is-dragging');
+
+    function clearMarkers() {
+        list.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+            el.classList.remove('drop-before', 'drop-after');
+        });
+    }
+
+    function onMove(e) {
+        moved = true;
+        row.style.transform = `translateY(${e.clientY - startY}px)`;
+        clearMarkers();
+
+        const others = [...list.querySelectorAll('.habit-row')].filter(r => r !== row);
+        dropTarget = others.find(r => {
+            const box = r.getBoundingClientRect();
+            return e.clientY < box.top + box.height / 2;
+        }) || null;
+
+        if (dropTarget) {
+            dropTarget.classList.add('drop-before');
+        } else if (others.length > 0) {
+            others[others.length - 1].classList.add('drop-after');
+        }
+    }
+
+    function stopDragging() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onCancel);
+        clearMarkers();
+        row.classList.remove('dragging');
+        row.style.transform = '';
+        document.body.classList.remove('is-dragging');
+    }
+
+    function onUp() {
+        stopDragging();
+        if (!moved) {
+            return;
+        }
+        if (dropTarget) {
+            list.insertBefore(row, dropTarget);
+        } else {
+            list.appendChild(row);
+        }
+        saveStackOrder([...list.querySelectorAll('.habit-row')].map(r => Number(r.dataset.habitId)));
+    }
+
+    function onCancel() {
+        stopDragging();
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+}
+
+// Keyboard version: focus the dots, then press the up / down arrow
+function moveWithKeyboard(event, row) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+        return;
+    }
+    event.preventDefault();
+
+    const ids = [...row.parentElement.querySelectorAll('.habit-row')].map(r => Number(r.dataset.habitId));
+    const id = Number(row.dataset.habitId);
+    const from = ids.indexOf(id);
+    const to = event.key === 'ArrowUp' ? from - 1 : from + 1;
+    if (to < 0 || to >= ids.length) {
+        return;
+    }
+
+    ids.splice(from, 1);
+    ids.splice(to, 0, id);
+    saveStackOrder(ids, id);
+}
+
+// orderedIds = every habit id in one stack, in the new order.
+// Updates the page right away, then saves it to the server.
+async function saveStackOrder(orderedIds, focusId) {
+    const stackHabits = habits.filter(h => orderedIds.includes(h.id));
+
+    // Nothing to do if the order did not actually change
+    if (stackHabits.every((h, i) => h.id === orderedIds[i])) {
+        return;
+    }
+
+    // Hand the stack's existing order numbers back out in the new order
+    // (same idea the server uses), so the page matches the database
+    const slots = stackHabits.map(h => h.sort_order).sort((a, b) => a - b);
+    orderedIds.forEach((id, i) => {
+        habits.find(h => h.id === id).sort_order = slots[i];
+    });
+    sortHabits();
+    renderStacks();
+
+    if (focusId !== undefined) {
+        const handle = document.querySelector(`[data-habit-id="${focusId}"] .drag-handle`);
+        if (handle) {
+            handle.focus();
+        }
+    }
+
+    const result = await DataModel.reorderHabits(orderedIds);
+    if (!result.ok) {
+        alert(`${result.error} Your new order was not saved.`);
+        loadHabits(); // put the page back to what the database has
+    }
 }
 
 //////////////////////////////////////////
