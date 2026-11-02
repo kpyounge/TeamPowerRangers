@@ -178,6 +178,12 @@ const DataModel = (function () {
             return this.habitRequest("PUT", "/api/habits/reorder", { ids: habitIds });
         },
 
+        //save how far the user is through the tutorial:
+        //"new" -> "first_habit" -> "complete" (the server only moves forward)
+        updateTutorialStatus: function (status) {
+            return this.habitRequest("PATCH", "/api/users/me/tutorial", { status: status });
+        },
+
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
         //AND SEND DATA TO THE SERVER AS NEEDED
     };

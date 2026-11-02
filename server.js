@@ -227,7 +227,7 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status FROM user WHERE username = ?',
             [req.user.username]
         );
 
@@ -270,7 +270,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
   
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status FROM user WHERE username = ?',
             [newUsername]
         );
 
@@ -291,6 +291,46 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
         }
         console.error(error);
         res.status(500).json({ message: 'Error updating profile.' });
+    }
+});
+
+// Route: Save how far the user is through the first-time tutorial.
+// The status can only move forward: new -> first_habit -> complete.
+const TUTORIAL_STATUSES = ['new', 'first_habit', 'complete'];
+
+app.patch('/api/users/me/tutorial', authenticateToken, async (req, res) => {
+    const { status } = req.body || {};
+    if (!TUTORIAL_STATUSES.includes(status)) {
+        return res.status(400).json({ message: 'Invalid tutorial status.' });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        const [rows] = await connection.execute(
+            'SELECT tutorial_status FROM user WHERE user_id = ?',
+            [req.user.user_id]
+        );
+
+        if (rows.length === 0) {
+            await connection.end();
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        let current = rows[0].tutorial_status;
+        if (TUTORIAL_STATUSES.indexOf(status) > TUTORIAL_STATUSES.indexOf(current)) {
+            await connection.execute(
+                'UPDATE user SET tutorial_status = ? WHERE user_id = ?',
+                [status, req.user.user_id]
+            );
+            current = status;
+        }
+
+        await connection.end();
+        res.status(200).json({ tutorial_status: current });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error saving tutorial progress.' });
     }
 });
 
