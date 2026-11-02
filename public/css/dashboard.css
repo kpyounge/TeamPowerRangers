@@ -506,3 +506,161 @@ body.is-dragging {
 
 .habit-row.drop-before::before { top: -7px; }
 .habit-row.drop-after::after   { bottom: -7px; }
+
+
+
+/* ===========================================================
+   First-time tutorial (tutorial.js)
+   =========================================================== */
+
+/* Semi-transparent background that blocks the page */
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background-color: rgba(0, 0, 0, 0.78);
+}
+
+/* Last step: chat bubble sits above the "+" button, pointing at it */
+.tutorial-overlay.pointing {
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding-bottom: 104px;
+}
+
+/* Hide the tutorial while the Add Habit pop-up is open (that pop-up
+   has its own dark background). It comes back if the user cancels. */
+body:has(.modal-overlay:not(.hidden)) .tutorial-overlay {
+    display: none;
+}
+
+/* The Add Habit pop-up must sit above the tutorial's "+" button */
+body.tutorial-active .modal-overlay {
+    z-index: 1100;
+}
+
+/* ---------- Chat: avatar + speech bubble ---------- */
+.tutorial-card {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    width: 100%;
+    max-width: 440px;
+}
+
+.tutorial-avatar {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background-color: var(--color-cyan);
+    border: 3px solid var(--color-cyan);
+    border-radius: 50%;
+}
+
+.tutorial-bubble {
+    position: relative;
+    flex: 1;
+    padding: 16px 18px;
+    color: #FFFFFF; /* always white - bubble is always on the purple brand color */
+    background-color: var(--color-purple);
+    border-radius: 20px 20px 20px 4px;
+}
+
+/* Little tail pointing back at the avatar */
+.tutorial-bubble::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    bottom: 14px;
+    border: 8px solid transparent;
+    border-left: 0;
+    border-right-color: var(--color-purple);
+}
+
+.tutorial-bubble h2 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.tutorial-bubble p {
+    margin: 0 0 14px;
+    line-height: 1.4;
+}
+
+.tutorial-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* A footer with just one item (the congratulation button) goes on the right */
+.tutorial-footer > :only-child {
+    margin-left: auto;
+}
+
+.tutorial-progress {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.tutorial-next-btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 20px;
+    background-color: var(--color-cyan);
+    color: #000000;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tutorial-next-btn:hover {
+    opacity: 0.85;
+}
+
+.tutorial-next-btn:focus-visible {
+    outline: 3px solid var(--color-green);
+    outline-offset: 3px;
+}
+
+/* ---------- Last step: arrow pointing down at the "+" button ---------- */
+.tutorial-overlay.pointing .tutorial-bubble::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    right: 32px;
+    border: 10px solid transparent;
+    border-bottom: 0;
+    border-top-color: var(--color-purple);
+}
+
+/* ---------- Highlight the "+" button so it stands out above the overlay ---------- */
+.add-habit-btn.tutorial-highlight {
+    z-index: 1001;
+    animation: tutorialPulse 1.4s ease-out infinite;
+}
+
+@keyframes tutorialPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(75, 255, 54, 0.8); }
+    100% { box-shadow: 0 0 0 22px rgba(75, 255, 54, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .add-habit-btn.tutorial-highlight {
+        animation: none;
+        box-shadow: 0 0 0 6px rgba(75, 255, 54, 0.6);
+    }
+}
+
+@media (max-width: 420px) {
+    .tutorial-avatar {
+        width: 56px;
+        height: 56px;
+    }
+}

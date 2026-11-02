@@ -15,6 +15,13 @@ let habits = [];
 // The id of the habit currently open in the edit pop-up
 let editingHabitId = null;
 
+// How far the user is through the tutorial, saved on their account:
+//   "new"         - hasn't added a first habit yet
+//   "first_habit" - added a first habit; the first-stack pop-up is still to come
+//   "complete"    - has seen everything
+// Defaults to "complete" so that if it can't be loaded, nothing pops up.
+let tutorialStatus = 'complete';
+
 const TIME_LABELS = {
     morning: 'Morning',
     afternoon: 'Afternoon',
@@ -70,7 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
 //LOAD HABITS FROM THE SERVER
 //////////////////////////////////////////
 async function loadHabits() {
-    const result = await DataModel.getHabits();
+    // Load the habits and the user's tutorial progress at the same time
+    const [result, user] = await Promise.all([
+        DataModel.getHabits(),
+        DataModel.getCurrentUser()
+    ]);
 
     if (!result.ok) {
         // An expired or invalid token means the user has to log in again
@@ -85,11 +96,51 @@ async function loadHabits() {
 
     habits = result.data.habits.map(toLocalHabit);
     renderStacks();
+
+    
+    tutorialStatus = (user && user.tutorial_status) || 'complete';
+
+    if (tutorialStatus === 'new') {
+        if (habits.length === 0) {
+            // First-time user: show the tutorial
+            startTutorial();
+        } else {
+            // Already has habits
+            saveTutorialStatus('complete');
+        }
+    }
 }
 
 // Adds the front-end-only fields (checkbox + streak) to a habit from the server
 function toLocalHabit(serverHabit) {
     return { ...serverHabit, completed: false, streak: 0 };
+}
+
+// Saves the tutorial progress on the user's account. The page moves on
+// right away; if the save fails the worst case is seeing a pop-up again.
+async function saveTutorialStatus(status) {
+    tutorialStatus = status;
+    const result = await DataModel.updateTutorialStatus(status);
+    if (!result.ok) {
+        console.error('Could not save tutorial progress:', result.error);
+    }
+}
+
+// Called after a new habit is saved
+function updateTutorialProgress() {
+    if (tutorialStatus === 'new') {
+        // They just added their first habit, so the tutorial is done
+        saveTutorialStatus('first_habit');
+    } else if (tutorialStatus === 'first_habit' && hasStackOfTwo()) {
+        // Their first stack: celebrate once, then never show it again
+        showFirstStackPopup();
+        saveTutorialStatus('complete');
+    }
+}
+
+// True when any stack (time of day) has two or more habits
+function hasStackOfTwo() {
+    return TIME_ORDER.some(time => habits.filter(h => h.time === time).length >= 2);
 }
 
 // The server decides the order (sort_order), so keep our list in that order
@@ -359,6 +410,8 @@ async function saveNewHabit() {
     sortHabits();
     closeModal();
     renderStacks();
+    endTutorial(); // the first saved habit finishes the tutorial
+    updateTutorialProgress(); // saves progress and shows the first-stack pop-up
 }
 
 //////////////////////////////////////////
