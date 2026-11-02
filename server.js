@@ -263,7 +263,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         await connection.execute(
-            'UPDATE user SET username = ?, firstname = ?, lastname = ?, profile_picture = COALESCE(?, profile_picture) WHERE user__id = ?',
+            'UPDATE user SET username = ?, firstname = ?, lastname = ?, profile_picture = COALESCE(?, profile_picture) WHERE user_id = ?',
             [newUsername, firstname.trim(), lastname.trim(), profile_picture ?? null, req.user.user_id]
         );
 
