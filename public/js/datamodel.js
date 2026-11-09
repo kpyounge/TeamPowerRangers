@@ -153,8 +153,13 @@ const DataModel = (function () {
         },
 
         //fetch the logged-in user's habits, in stack order
-        getHabits: function () {
-            return this.habitRequest("GET", "/api/habits");
+        getHabits: function (today) {
+            return this.habitRequest("GET", "/api/habits?today=" + today);
+        },
+
+        //check or uncheck a habit for a day: date = "YYYY-MM-DD"
+        setHabitCheck: function (habitId, date, checked) {
+            return this.habitRequest("PUT", "/api/habits/" + habitId + "/check", { date: date, checked: checked });
         },
 
         //add a habit: habit = { name, time, status }

@@ -338,7 +338,36 @@ app.patch('/api/users/me/tutorial', authenticateToken, async (req, res) => {
 const HABIT_TIMES = ['morning', 'afternoon', 'evening', 'night'];
 const HABIT_STATUSES = ['working_on', 'current'];
 const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, time_of_day AS time, status, streak, sort_order';
+// ---------- STREAKS ----------
+function isValidDate(str) {
+    if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return false;
+    }
+    const [y, m, d] = str.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
 
+function shiftDate(dateStr, days) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+// Counts the checks in a row going back from yesterday, then adds
+// today if it is checked. One missed day resets it to 0.
+function calculateStreak(checkedDates, today) {
+    const checked = new Set(checkedDates);
+    let streak = 0;
+    let day = shiftDate(today, -1);
+    while (checked.has(day)) {
+        streak++;
+        day = shiftDate(day, -1);
+    }
+    if (checked.has(today)) {
+        streak++;
+    }
+    return streak;
+}
 // Checks the name / stack / status sent from the add and edit forms.
 // Returns { error } or { name, time, status }.
 function validateHabit(body) {
@@ -358,19 +387,110 @@ function validateHabit(body) {
     return { name: name.trim(), time, status };
 }
 
-// Route: Get the logged-in user's habits (in stack order)
+// Route: Get the logged-in user's habits (in stack order).
+// The page sends today's date as ?today=YYYY-MM-DD (the user's own date).
 app.get('/api/habits', authenticateToken, async (req, res) => {
+    const today = req.query.today;
+    if (!isValidDate(today)) {
+        return res.status(400).json({ message: 'A valid date is required.' });
+    }
+
     try {
         const connection = await createConnection();
         const [rows] = await connection.execute(
             `SELECT ${HABIT_COLUMNS} FROM habit WHERE user_id = ? ORDER BY sort_order, habit_id`,
             [req.user.user_id]
         );
+
+        const [checks] = await connection.execute(
+            `SELECT c.habit_id, DATE_FORMAT(c.check_date, '%Y-%m-%d') AS check_date
+             FROM habit_check c
+             JOIN habit h ON h.habit_id = c.habit_id
+             WHERE h.user_id = ?`,
+            [req.user.user_id]
+        );
+
+        const datesByHabit = {};
+        checks.forEach(c => {
+            (datesByHabit[c.habit_id] = datesByHabit[c.habit_id] || []).push(c.check_date);
+        });
+
+        for (const habit of rows) {
+            const dates = datesByHabit[habit.id] || [];
+            const streak = calculateStreak(dates, today);
+            habit.completed = dates.includes(today);
+
+            // Save the streak if it changed (this is where a lost streak resets to 0)
+            if (streak !== habit.streak) {
+                await connection.execute(
+                    'UPDATE habit SET streak = ? WHERE habit_id = ?',
+                    [streak, habit.id]
+                );
+                habit.streak = streak;
+            }
+        }
+
         await connection.end();
         res.status(200).json({ habits: rows });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error retrieving habits.' });
+    }
+});
+
+// Route: Check or uncheck a habit for a day. Body: { date: 'YYYY-MM-DD', checked: true/false }
+app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
+    const habitId = Number(req.params.id);
+    const { date, checked } = req.body || {};
+
+    if (!Number.isInteger(habitId)) {
+        return res.status(400).json({ message: 'Invalid habit id.' });
+    }
+    if (!isValidDate(date) || typeof checked !== 'boolean') {
+        return res.status(400).json({ message: 'A valid date and checked value are required.' });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        // Only the owner can check a habit
+        const [existing] = await connection.execute(
+            'SELECT habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
+            [habitId, req.user.user_id]
+        );
+        if (existing.length === 0) {
+            await connection.end();
+            return res.status(404).json({ message: 'Habit not found.' });
+        }
+
+        if (checked) {
+            await connection.execute(
+                'INSERT IGNORE INTO habit_check (habit_id, check_date) VALUES (?, ?)',
+                [habitId, date]
+            );
+        } else {
+            await connection.execute(
+                'DELETE FROM habit_check WHERE habit_id = ? AND check_date = ?',
+                [habitId, date]
+            );
+        }
+
+        const [checks] = await connection.execute(
+            "SELECT DATE_FORMAT(check_date, '%Y-%m-%d') AS check_date FROM habit_check WHERE habit_id = ?",
+            [habitId]
+        );
+        const streak = calculateStreak(checks.map(c => c.check_date), date);
+
+        await connection.execute(
+            'UPDATE habit SET streak = ? WHERE habit_id = ?',
+            [streak, habitId]
+        );
+        await connection.end();
+
+        res.status(200).json({ completed: checked, streak });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error saving check.' });
     }
 });
 

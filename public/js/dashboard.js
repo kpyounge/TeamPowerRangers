@@ -3,10 +3,8 @@
 //THIS IS YOUR "CONTROLLER" FOR THE HABIT STACKS PAGE.
 //
 //Habits are loaded from the server (/api/habits) and adding,
-//editing and deleting a habit are all saved to the database.
-//
-//Still front-end only: the "completed" checkbox and the streak
-//badge. Those get wired up in a later sprint.
+//editing, deleting and checking off a habit are all saved to
+//the database. The server also works out each habit's streak.
 ////////////////////////////////////////////////////////////////
 
 // The logged-in user's habits, in stack order. Filled in by loadHabits().
@@ -73,13 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
     loadHabits();
 });
 
+// Today's date in the user's own time zone, as YYYY-MM-DD
+function todayString() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 //////////////////////////////////////////
 //LOAD HABITS FROM THE SERVER
 //////////////////////////////////////////
 async function loadHabits() {
     // Load the habits and the user's tutorial progress at the same time
     const [result, user] = await Promise.all([
-        DataModel.getHabits(),
+        DataModel.getHabits(todayString()),
         DataModel.getCurrentUser()
     ]);
 
@@ -97,7 +103,7 @@ async function loadHabits() {
     habits = result.data.habits.map(toLocalHabit);
     renderStacks();
 
-    
+
     tutorialStatus = (user && user.tutorial_status) || 'complete';
 
     if (tutorialStatus === 'new') {
@@ -111,9 +117,9 @@ async function loadHabits() {
     }
 }
 
-// Adds the front-end-only fields (checkbox + streak) to a habit from the server
+// The server sends "completed" (checked today?) and "streak" with each habit
 function toLocalHabit(serverHabit) {
-    return { ...serverHabit, completed: false, streak: 0 };
+    return { ...serverHabit, completed: !!serverHabit.completed };
 }
 
 // Saves the tutorial progress on the user's account. The page moves on
@@ -202,10 +208,22 @@ function renderHabitRow(habit) {
     row.appendChild(checkbox);
     row.appendChild(name);
 
+    // Fire icon with the streak number on top, shown to the left of the edit button
     if (habit.streak >= 3) {
         const streakBadge = document.createElement('span');
         streakBadge.className = 'streak-badge';
-        streakBadge.textContent = `\u{1F525} ${habit.streak}`;
+        streakBadge.title = `${habit.streak} day streak`;
+
+        const fire = document.createElement('span');
+        fire.className = 'streak-fire';
+        fire.textContent = '\u{1F525}';
+
+        const count = document.createElement('span');
+        count.className = 'streak-count';
+        count.textContent = habit.streak;
+
+        streakBadge.appendChild(fire);
+        streakBadge.appendChild(count);
         row.appendChild(streakBadge);
     }
 
@@ -363,13 +381,27 @@ async function saveStackOrder(orderedIds, focusId) {
 }
 
 //////////////////////////////////////////
-//CHECKBOX TOGGLE (front-end only for now)
+//CHECKBOX TOGGLE (saved to the database)
 //////////////////////////////////////////
-function toggleHabit(habitId, isChecked) {
+async function toggleHabit(habitId, isChecked) {
     const habit = habits.find(h => h.id === habitId);
-    if (habit) {
-        habit.completed = isChecked;
+    if (!habit) {
+        return;
     }
+
+    habit.completed = isChecked;
+    renderStacks();
+
+    const result = await DataModel.setHabitCheck(habitId, todayString(), isChecked);
+    if (!result.ok) {
+        habit.completed = !isChecked; // put the checkbox back
+        renderStacks();
+        alert(result.error);
+        return;
+    }
+
+    // The server works out the streak
+    habit.streak = result.data.streak;
     renderStacks();
 }
 
