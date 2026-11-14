@@ -209,7 +209,7 @@ function renderHabitRow(habit) {
     row.appendChild(name);
 
     // Fire icon with the streak number on top, shown to the left of the edit button
-    if (habit.streak >= 3) {
+    if (habit.streak >= 1) {
         const streakBadge = document.createElement('span');
         streakBadge.className = 'streak-badge';
         streakBadge.title = `${habit.streak} day streak`;
