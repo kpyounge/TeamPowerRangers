@@ -162,6 +162,12 @@ const DataModel = (function () {
             return this.habitRequest("PUT", "/api/habits/" + habitId + "/check", { date: date, checked: checked });
         },
 
+        //fetch one habit's progress for the line graph: one point per day,
+        //ending today. today = "YYYY-MM-DD", days = 7, 30, 90 or 180
+        getHabitProgress: function (habitId, today, days) {
+            return this.habitRequest("GET", "/api/habits/" + habitId + "/progress?today=" + today + "&days=" + days);
+        },
+
         //add a habit: habit = { name, time, status }
         createHabit: function (habit) {
             return this.habitRequest("POST", "/api/habits", habit);

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress</title>
+    <!-- Apply the saved light/dark theme before the stylesheet renders -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <!-- Light / dark mode toggle -->
+    <div class="theme-toggle-row">
+        <span>Light / Dark Mode</span>
+        <label class="theme-switch">
+            <input type="checkbox" id="themeToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Progress</h1>
+            <div class="header-links">
+                <a href="profilepage.html">Profile</a>
+                <button id="logoutButton">Log Out</button>
+            </div>
+        </div>
+
+        <!-- Pick a habit -->
+        <label for="habitSelect" class="progress-label">Habit</label>
+        <select id="habitSelect" class="progress-select">
+            <option value="">Select a habit...</option>
+        </select>
+
+        <!-- Pick a time range -->
+        <div class="range-buttons" role="group" aria-label="Time range">
+            <button type="button" class="range-btn active" data-days="7" aria-pressed="true">1 Week</button>
+            <button type="button" class="range-btn" data-days="30" aria-pressed="false">1 Month</button>
+            <button type="button" class="range-btn" data-days="90" aria-pressed="false">3 Months</button>
+            <button type="button" class="range-btn" data-days="180" aria-pressed="false">6 Months</button>
+        </div>
+
+        <!-- The line graph -->
+        <div class="chart-card">
+            <div class="chart-wrap">
+                <canvas id="progressChart" role="img" aria-label="Line graph of the selected habit's daily progress"></canvas>
+                <p id="chartMessage" class="chart-message">Select a habit to see its progress.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom navigation bar: Dashboard and Progress (this page) -->
+    <nav class="bottom-nav" aria-label="Main">
+        <a href="/dashboard" class="nav-tab">
+            <span class="nav-icon" aria-hidden="true">&#128203;</span>
+            <span>Dashboard</span>
+        </a>
+        <a href="/progress.html" class="nav-tab active" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">&#128200;</span>
+            <span>Progress</span>
+        </a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/js/datamodel.js"></script>
+    <script src="/js/theme.js"></script>
+    <script src="/js/progress.js"></script>
+</body>
+</html>
