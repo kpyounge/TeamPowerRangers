@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const firstname = document.getElementById("firstname");
     const accountCreationDate = document.getElementById("accountCreationDate");
 
+    const activeHabits = document.getElementById("activeHabits");
+    const currentStreak = document.getElementById("currentStreak");
+
     const editProfileButton = document.getElementById("editProfileButton");
    
     const logoutButton = document.getElementById("logoutButton");
@@ -119,7 +122,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (currentUser) {
         renderUser(currentUser);
+
     }
+// Get today's date
+const now = new Date();
+const month = String(now.getMonth() + 1).padStart(2, "0");
+const day = String(now.getDate()).padStart(2, "0");
+const today = `${now.getFullYear()}-${month}-${day}`;
+
+// Load the user's habits
+const habitResult = await DataModel.getHabits(today);
+
+if (habitResult.ok) {
+const habits = habitResult.data.habits;
+
+// Show number of active habits
+activeHabits.textContent = habits.length;
+
+// Show highest current streak
+const highestStreak = habits.length
+        ? Math.max(...habits.map(habit => habit.streak || 0))
+        : 0;
+
+    currentStreak.textContent = highestStreak;
+}
 
 
     ////////////////////////////////////////////////////////////
