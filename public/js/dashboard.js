@@ -208,8 +208,9 @@ function renderHabitRow(habit) {
     row.appendChild(checkbox);
     row.appendChild(name);
 
-    // Fire icon with the streak number on top, shown to the left of the edit button
-    if (habit.streak >= 1) {
+    // Fire icon with the streak number on top, shown to the left of the edit button.
+    // Only shown once the streak reaches 3 days (per the acceptance criteria).
+    if (habit.streak >= 3) {
         const streakBadge = document.createElement('span');
         streakBadge.className = 'streak-badge';
         streakBadge.title = `${habit.streak} day streak`;
