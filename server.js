@@ -394,11 +394,12 @@ function calculateStreak(checkedDates, today) {
     }
     return streak;
 }
-// True if any habit ABOVE this one in the same stack (same time_of_day,
-// earlier in sort_order / habit_id order) is unchecked on the given date.
-async function isHabitSkipped(connection, userId, habit, date) {
+// Returns the ids of the habits ABOVE this one in the same stack (same
+// time_of_day, earlier in sort_order / habit_id order) that are still
+// unchecked on the given date. These are the habits that were skipped.
+async function getSkippedHabitIds(connection, userId, habit, date) {
     const [rows] = await connection.execute(
-        `SELECT COUNT(*) AS missed
+        `SELECT h.habit_id
          FROM habit h
          LEFT JOIN habit_check c ON c.habit_id = h.habit_id AND c.check_date = ?
          WHERE h.user_id = ? AND h.time_of_day = ?
@@ -406,7 +407,7 @@ async function isHabitSkipped(connection, userId, habit, date) {
            AND c.habit_id IS NULL`,
         [date, userId, habit.time_of_day, habit.sort_order, habit.sort_order, habit.habit_id]
     );
-    return Number(rows[0].missed) > 0;
+    return rows.map(r => r.habit_id);
 }
 
 // Checks the name / stack / status sent from the add and edit forms.
@@ -545,15 +546,23 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
             [streak, status, habitId]
         );
 
-        // A habit is "skipped" when it was just checked but a habit above it
-        // in the SAME stack is still unchecked for that day.
-        let skipped = false;
+        // When a habit is checked, any habit above it in the SAME stack that
+        // is still unchecked for that day was skipped. Send back their ids
+        // so the page can shake those rows (not the one just checked).
+        let skippedIds = [];
         if (checked) {
-            skipped = await isHabitSkipped(connection, req.user.user_id, existing[0], date);
+            skippedIds = await getSkippedHabitIds(connection, req.user.user_id, existing[0], date);
         }
         await connection.end();
 
-        res.status(200).json({ completed: checked, streak, status, graduated, skipped });
+        res.status(200).json({
+            completed: checked,
+            streak,
+            status,
+            graduated,
+            skipped: skippedIds.length > 0,
+            skippedIds
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error saving check.' });

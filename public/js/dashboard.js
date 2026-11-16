@@ -412,10 +412,10 @@ async function toggleHabit(habitId, isChecked) {
     }
     renderStacks();
 
-    // The server says if a habit above this one in the stack was skipped
-    if (result.data.skipped) {
-        shakeHabitRow(habitId);
-    }
+    // The server sends back the habits above this one in the stack that
+    // are still unchecked. Shake those (the skipped ones), not the one
+    // that was just checked.
+    (result.data.skippedIds || []).forEach(id => shakeHabitRow(id));
 }
 
 // Briefly shakes a habit row (renderStacks must have already run,
