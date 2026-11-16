@@ -46,6 +46,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const themeToggle = document.getElementById("themeToggle");
 
+    const preferencesButton = document.getElementById("preferencesButton");
+    const preferencesDialog = document.getElementById("preferencesDialog");
+    const preferencesForm = document.getElementById("preferencesForm");
+    const graduationSelect = document.getElementById("graduationSelect");
+    const preferencesError = document.getElementById("preferencesError");
+    const cancelPreferencesButton = document.getElementById("cancelPreferencesButton");
+    const savePreferencesButton = document.getElementById("savePreferencesButton");
+
     const profilePicture = document.getElementById("profilePicture");
     const avatarOptions = document.getElementById("profilePictureOptions");
 
@@ -211,6 +219,44 @@ const highestStreak = habits.length
         editProfileDialog.close();
     });
 
+    ////////////////////////////////////////////////////////////
+    // USER PREFERENCES POPUP
+    ////////////////////////////////////////////////////////////
+
+    preferencesButton.addEventListener("click", () => {
+        if (!currentUser) return;
+
+        graduationSelect.value = String(currentUser.graduation_days ?? 30);
+        preferencesError.hidden = true;
+        preferencesDialog.showModal();
+    });
+
+    cancelPreferencesButton.addEventListener("click", () => {
+        preferencesDialog.close();
+    });
+
+    preferencesForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        savePreferencesButton.disabled = true;
+
+        const result = await DataModel.updatePreferences({
+            graduation_days: Number(graduationSelect.value)
+        });
+
+        savePreferencesButton.disabled = false;
+
+        if (!result.ok) {
+            preferencesError.textContent = result.error;
+            preferencesError.hidden = false;
+            return;
+        }
+
+        // Only remember the new value after the server confirms the save
+        currentUser.graduation_days = result.data.graduation_days;
+        preferencesDialog.close();
+    });
+
 
     ////////////////////////////////////////////////////////////
     // LIGHT / DARK MODE
@@ -224,7 +270,6 @@ const highestStreak = habits.length
 
         Theme.apply(selectedTheme);
     });
-
 
     ////////////////////////////////////////////////////////////
     // LOG OUT

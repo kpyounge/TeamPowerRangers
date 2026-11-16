@@ -683,3 +683,152 @@ body.tutorial-active .modal-overlay {
         height: 56px;
     }
 }
+
+
+
+/* ===========================================================
+   Bottom navigation bar (Dashboard / Progress)
+   =========================================================== */
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;                 /* below the pop-ups (z-index 50+) */
+    display: flex;
+    background-color: var(--row-bg);
+    border-top: 2px solid var(--color-purple);
+}
+
+.nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 0 10px;
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 400;
+    opacity: 0.65;
+}
+
+.nav-tab .nav-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.nav-tab:hover,
+.nav-tab:focus-visible {
+    opacity: 1;
+}
+
+/* The page you are on */
+.nav-tab.active {
+    opacity: 1;
+    font-weight: 700;
+    box-shadow: inset 0 3px 0 var(--color-purple);
+}
+
+/* Lift the floating + button and the page content above the bar */
+.add-habit-btn {
+    bottom: 84px;
+}
+
+.container {
+    padding-bottom: 140px;
+}
+
+/* ===========================================================
+   Progress page
+   =========================================================== */
+.progress-label {
+    display: block;
+    margin: 0 0 6px 4px;
+    font-weight: 700;
+}
+
+.progress-select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 2px solid var(--color-purple);
+    background-color: var(--row-bg);
+    color: var(--color-text);
+    font-size: 1rem;
+    margin-bottom: 16px;
+}
+
+.range-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.range-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 12px;
+    border-radius: 20px;
+    border: 2px solid var(--color-purple);
+    background-color: transparent;
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.range-btn.active {
+    background-color: var(--color-purple);
+    color: #FFFFFF;
+}
+
+.chart-card {
+    background-color: var(--row-bg);
+    border-radius: 20px;
+    padding: 16px;
+}
+
+.chart-wrap {
+    position: relative;
+    height: 320px;
+}
+
+/* Text shown over the graph while it is blank */
+.chart-message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0 40px;
+    text-align: center;
+    color: var(--color-text);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.chart-message[hidden] {
+    display: none;
+}
+
+
+/* ---------- Toast message (e.g. a habit graduated) ---------- */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 110px;
+    transform: translateX(-50%);
+    z-index: 60;
+    max-width: 90%;
+    padding: 10px 18px;
+    border-radius: 20px;
+    background-color: var(--color-green);
+    color: #000000;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}

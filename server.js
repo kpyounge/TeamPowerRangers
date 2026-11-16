@@ -227,7 +227,7 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days FROM user WHERE username = ?',
             [req.user.username]
         );
 
@@ -270,7 +270,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
   
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days FROM user WHERE username = ?',
             [newUsername]
         );
 
@@ -331,6 +331,32 @@ app.patch('/api/users/me/tutorial', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error saving tutorial progress.' });
+    }
+});
+
+// Route: Save the user's preferences. For now that is the graduation
+// length: how many days of streak an in-progress habit needs before it
+// becomes an existing habit. 0 means "no graduation".
+const GRADUATION_OPTIONS = [0, 10, 20, 30, 60, 90];
+
+app.patch('/api/users/me/preferences', authenticateToken, async (req, res) => {
+    const { graduation_days } = req.body || {};
+    if (!GRADUATION_OPTIONS.includes(graduation_days)) {
+        return res.status(400).json({ message: 'Please choose a valid graduation length.' });
+    }
+
+    try {
+        const connection = await createConnection();
+        await connection.execute(
+            'UPDATE user SET graduation_days = ? WHERE user_id = ?',
+            [graduation_days, req.user.user_id]
+        );
+        await connection.end();
+
+        res.status(200).json({ graduation_days });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error saving preferences.' });
     }
 });
 
@@ -455,7 +481,7 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
 
         // Only the owner can check a habit
         const [existing] = await connection.execute(
-            'SELECT habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
+            'SELECT habit_id, status, streak FROM habit WHERE habit_id = ? AND user_id = ?',
             [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
@@ -481,16 +507,96 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
         );
         const streak = calculateStreak(checks.map(c => c.check_date), date);
 
+        // Graduation: when an in-progress habit's streak REACHES the user's
+        // graduation length, it becomes an existing habit for good. Only the
+        // moment the streak crosses the line counts, so a habit the user later
+        // sets back to "working on" by hand isn't graduated again right away.
+        let status = existing[0].status;
+        let graduated = false;
+        if (checked && status === 'working_on') {
+            const [[prefs]] = await connection.execute(
+                'SELECT graduation_days FROM user WHERE user_id = ?',
+                [req.user.user_id]
+            );
+            const graduationDays = prefs.graduation_days;
+            if (graduationDays > 0 && existing[0].streak < graduationDays && streak >= graduationDays) {
+                status = 'current';
+                graduated = true;
+            }
+        }
+
         await connection.execute(
-            'UPDATE habit SET streak = ? WHERE habit_id = ?',
-            [streak, habitId]
+            'UPDATE habit SET streak = ?, status = ? WHERE habit_id = ?',
+            [streak, status, habitId]
         );
         await connection.end();
 
-        res.status(200).json({ completed: checked, streak });
+        res.status(200).json({ completed: checked, streak, status, graduated });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error saving check.' });
+    }
+});
+
+// Route: Progress data for one habit's line graph.
+// Query: ?today=YYYY-MM-DD&days=7 (7, 30, 90 or 180). Sends back one point
+// for every day, ending today: value is 100 if the habit was checked that
+// day and 0 if not. So a habit that is newer than the time range just sits
+// at 0 until the first day it was checked.
+const PROGRESS_RANGES = [7, 30, 90, 180];
+
+app.get('/api/habits/:id/progress', authenticateToken, async (req, res) => {
+    const habitId = Number(req.params.id);
+    const days = Number(req.query.days);
+    const today = req.query.today;
+
+    if (!Number.isInteger(habitId)) {
+        return res.status(400).json({ message: 'Invalid habit id.' });
+    }
+    if (!PROGRESS_RANGES.includes(days)) {
+        return res.status(400).json({ message: 'Please choose a valid time range.' });
+    }
+    if (!isValidDate(today)) {
+        return res.status(400).json({ message: 'A valid date is required.' });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        // Only the owner can see a habit's progress
+        const [existing] = await connection.execute(
+            'SELECT habit_id, habit_name FROM habit WHERE habit_id = ? AND user_id = ?',
+            [habitId, req.user.user_id]
+        );
+        if (existing.length === 0) {
+            await connection.end();
+            return res.status(404).json({ message: 'Habit not found.' });
+        }
+
+        const startDate = shiftDate(today, -(days - 1));
+        const [checks] = await connection.execute(
+            `SELECT DATE_FORMAT(check_date, '%Y-%m-%d') AS check_date
+             FROM habit_check
+             WHERE habit_id = ? AND check_date BETWEEN ? AND ?`,
+            [habitId, startDate, today]
+        );
+        await connection.end();
+
+        const checkedDates = new Set(checks.map(c => c.check_date));
+        const points = [];
+        for (let i = 0; i < days; i++) {
+            const date = shiftDate(startDate, i);
+            points.push({ date, value: checkedDates.has(date) ? 100 : 0 });
+        }
+
+        res.status(200).json({
+            habit: { id: existing[0].habit_id, name: existing[0].habit_name },
+            days,
+            points
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error retrieving progress.' });
     }
 });
 

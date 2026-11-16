@@ -208,8 +208,9 @@ function renderHabitRow(habit) {
     row.appendChild(checkbox);
     row.appendChild(name);
 
-    // Fire icon with the streak number on top, shown to the left of the edit button
-    if (habit.streak >= 1) {
+    // Fire icon with the streak number on top, shown to the left of the edit button.
+    // Only shown once the streak reaches 3 days (per the acceptance criteria).
+    if (habit.streak >= 3) {
         const streakBadge = document.createElement('span');
         streakBadge.className = 'streak-badge';
         streakBadge.title = `${habit.streak} day streak`;
@@ -402,7 +403,24 @@ async function toggleHabit(habitId, isChecked) {
 
     // The server works out the streak
     habit.streak = result.data.streak;
+
+    // The server graduates an in-progress habit to an existing one when
+    // its streak reaches the user's graduation length
+    if (result.data.graduated) {
+        habit.status = result.data.status;
+        showToast(`"${habit.name}" graduated to an existing habit!`);
+    }
     renderStacks();
+}
+
+// Shows a short message at the bottom of the screen
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }
 
 //////////////////////////////////////////

@@ -8,6 +8,7 @@
     --color-orange: #ff9535;
     --color-green: #4bff36;
     --color-cyan: #02fee4;
+    --row-bg: #1e1e1e;
 }
 
 
@@ -402,4 +403,89 @@ body {
 
 .theme-switch input:checked + .slider::before {
     transform: translateX(24px);
+}
+
+
+/* ---------- User preferences button and popup ---------- */
+
+/* Three buttons in a row: let them wrap on narrow screens */
+.actions {
+    flex-wrap: wrap;
+}
+
+#preferencesButton {
+    background-color: var(--color-pink);
+}
+
+#preferencesDialog {
+    width: 90%;
+    max-width: 360px;
+    padding: 24px;
+    color: var(--color-text);
+    background-color: var(--color-purple);
+    border: none;
+    border-radius: 20px;
+}
+
+#preferencesDialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+#preferencesDialog h2 {
+    margin: 0 0 20px;
+    text-align: center;
+}
+
+#preferencesForm {
+    display: flex;
+    flex-direction: column;
+}
+
+#preferencesForm label {
+    display: block;
+    margin: 14px 0 5px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+#preferencesForm select {
+    width: 100%;
+    padding: 10px;
+    color: #000000;
+    background-color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+#preferencesForm select:focus {
+    outline: 3px solid var(--color-cyan);
+    outline-offset: 2px;
+}
+
+.preferences-hint {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+#preferencesError {
+    margin: 12px 0 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+#preferencesError[hidden] {
+    display: none;
+}
+
+#cancelPreferencesButton {
+    color: var(--color-text);
+    background-color: transparent;
+    border: 1px solid var(--color-text);
+}
+
+#cancelPreferencesButton:hover {
+    opacity: 0.85;
 }

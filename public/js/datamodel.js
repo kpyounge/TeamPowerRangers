@@ -162,6 +162,12 @@ const DataModel = (function () {
             return this.habitRequest("PUT", "/api/habits/" + habitId + "/check", { date: date, checked: checked });
         },
 
+        //fetch one habit's progress for the line graph: one point per day,
+        //ending today. today = "YYYY-MM-DD", days = 7, 30, 90 or 180
+        getHabitProgress: function (habitId, today, days) {
+            return this.habitRequest("GET", "/api/habits/" + habitId + "/progress?today=" + today + "&days=" + days);
+        },
+
         //add a habit: habit = { name, time, status }
         createHabit: function (habit) {
             return this.habitRequest("POST", "/api/habits", habit);
@@ -187,6 +193,12 @@ const DataModel = (function () {
         //"new" -> "first_habit" -> "complete" (the server only moves forward)
         updateTutorialStatus: function (status) {
             return this.habitRequest("PATCH", "/api/users/me/tutorial", { status: status });
+        },
+
+        //save the user's preferences: prefs = { graduation_days }
+        //(0 = no graduation, otherwise 10, 20, 30, 60 or 90)
+        updatePreferences: function (prefs) {
+            return this.habitRequest("PATCH", "/api/users/me/preferences", prefs);
         },
 
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
