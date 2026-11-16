@@ -411,6 +411,22 @@ async function toggleHabit(habitId, isChecked) {
         showToast(`"${habit.name}" graduated to an existing habit!`);
     }
     renderStacks();
+
+    // The server says if a habit above this one in the stack was skipped
+    if (result.data.skipped) {
+        shakeHabitRow(habitId);
+    }
+}
+
+// Briefly shakes a habit row (renderStacks must have already run,
+// because it rebuilds the rows)
+function shakeHabitRow(habitId) {
+    const row = document.querySelector(`.habit-row[data-habit-id="${habitId}"]`);
+    if (!row) {
+        return;
+    }
+    row.classList.add('shake');
+    row.addEventListener('animationend', () => row.classList.remove('shake'), { once: true });
 }
 
 // Shows a short message at the bottom of the screen

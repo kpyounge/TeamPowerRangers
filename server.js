@@ -394,6 +394,21 @@ function calculateStreak(checkedDates, today) {
     }
     return streak;
 }
+// True if any habit ABOVE this one in the same stack (same time_of_day,
+// earlier in sort_order / habit_id order) is unchecked on the given date.
+async function isHabitSkipped(connection, userId, habit, date) {
+    const [rows] = await connection.execute(
+        `SELECT COUNT(*) AS missed
+         FROM habit h
+         LEFT JOIN habit_check c ON c.habit_id = h.habit_id AND c.check_date = ?
+         WHERE h.user_id = ? AND h.time_of_day = ?
+           AND (h.sort_order < ? OR (h.sort_order = ? AND h.habit_id < ?))
+           AND c.habit_id IS NULL`,
+        [date, userId, habit.time_of_day, habit.sort_order, habit.sort_order, habit.habit_id]
+    );
+    return Number(rows[0].missed) > 0;
+}
+
 // Checks the name / stack / status sent from the add and edit forms.
 // Returns { error } or { name, time, status }.
 function validateHabit(body) {
@@ -481,7 +496,7 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
 
         // Only the owner can check a habit
         const [existing] = await connection.execute(
-            'SELECT habit_id, status, streak FROM habit WHERE habit_id = ? AND user_id = ?',
+            'SELECT habit_id, status, streak, time_of_day, sort_order FROM habit WHERE habit_id = ? AND user_id = ?',
             [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
@@ -529,9 +544,16 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
             'UPDATE habit SET streak = ?, status = ? WHERE habit_id = ?',
             [streak, status, habitId]
         );
+
+        // A habit is "skipped" when it was just checked but a habit above it
+        // in the SAME stack is still unchecked for that day.
+        let skipped = false;
+        if (checked) {
+            skipped = await isHabitSkipped(connection, req.user.user_id, existing[0], date);
+        }
         await connection.end();
 
-        res.status(200).json({ completed: checked, streak, status, graduated });
+        res.status(200).json({ completed: checked, streak, status, graduated, skipped });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error saving check.' });
