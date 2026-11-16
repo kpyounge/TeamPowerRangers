@@ -22,7 +22,7 @@
             <span class="slider"></span>
         </label>
     </div>
-
+    
     <a href="dashboard.html" class="dashboard-link"> Return to Dashboard </a>
 
     <div class="profile-container">
@@ -46,6 +46,10 @@
     <div class="actions">
         <button id="editProfileButton" type="button">
             Edit Profile
+        </button>
+
+        <button id="preferencesButton" type="button">
+            User Preferences
         </button>
 
         <button id="logoutButton" type="button">
@@ -78,6 +82,37 @@
                 </button>
 
                 <button type="submit" id="saveEditButton">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="preferencesDialog">
+        <form id="preferencesForm">
+            <h2>User Preferences</h2>
+
+            <label for="graduationSelect">Habit graduation</label>
+            <select id="graduationSelect" name="graduation_days">
+                <option value="10">10 days</option>
+                <option value="20">20 days</option>
+                <option value="30">30 days</option>
+                <option value="60">60 days</option>
+                <option value="90">90 days</option>
+                <option value="0">No graduation</option>
+            </select>
+            <p class="preferences-hint">
+                In-progress habits become existing habits when their streak reaches this length.
+            </p>
+
+            <p id="preferencesError" role="alert" hidden></p>
+
+            <div class="dialog-actions">
+                <button type="button" id="cancelPreferencesButton">
+                    Cancel
+                </button>
+
+                <button type="submit" id="savePreferencesButton">
                     Save Changes
                 </button>
             </div>

@@ -195,6 +195,12 @@ const DataModel = (function () {
             return this.habitRequest("PATCH", "/api/users/me/tutorial", { status: status });
         },
 
+        //save the user's preferences: prefs = { graduation_days }
+        //(0 = no graduation, otherwise 10, 20, 30, 60 or 90)
+        updatePreferences: function (prefs) {
+            return this.habitRequest("PATCH", "/api/users/me/preferences", prefs);
+        },
+
         //ADD MORE FUNCTIONS HERE TO FETCH DATA FROM THE SERVER
         //AND SEND DATA TO THE SERVER AS NEEDED
     };

@@ -403,7 +403,24 @@ async function toggleHabit(habitId, isChecked) {
 
     // The server works out the streak
     habit.streak = result.data.streak;
+
+    // The server graduates an in-progress habit to an existing one when
+    // its streak reaches the user's graduation length
+    if (result.data.graduated) {
+        habit.status = result.data.status;
+        showToast(`"${habit.name}" graduated to an existing habit!`);
+    }
     renderStacks();
+}
+
+// Shows a short message at the bottom of the screen
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'status');
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }
 
 //////////////////////////////////////////
