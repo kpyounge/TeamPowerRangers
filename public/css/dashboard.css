@@ -452,6 +452,22 @@ body {
 .habit-row {
     position: relative;
 }
+/* Habit that builds on another habit */
+.child-habit {
+    margin-left: 40px;
+}
+
+/* Visual connector showing the stack relationship */
+.child-habit::before {
+    content: "↳";
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    font-weight: bold;
+    color: #000000;
+}
 
 /* ---------- In progress ("working on") vs existing ("current") ----------
    In-progress habits get the emphasis: bold text plus an outline in the
@@ -462,7 +478,7 @@ body {
 }
 
 .habit-row.working_on .habit-name {
-    font-weight: 800;
+    font-weight: 400;
 }
 
 .habit-row.current .habit-name {
@@ -549,6 +565,7 @@ body.is-dragging {
     align-items: flex-end;
     justify-content: flex-end;
     padding-bottom: 104px;
+    padding-right: 150px;
 }
 
 /* Hide the tutorial while the Add Habit pop-up is open (that pop-up
@@ -662,6 +679,15 @@ body.tutorial-active .modal-overlay {
 /* ---------- Highlight the "+" button so it stands out above the overlay ---------- */
 .add-habit-btn.tutorial-highlight {
     z-index: 1001;
+    outline: 4px solid var(--color-green);
+    outline-offset:6px;
+    animation: tutorialPulse 1.4s ease-out infinite;
+}
+
+/* Highlight "Build on" while teaching the user how to create a stack */
+#parentHabitInput.tutorial-highlight {
+    outline: 4px solid var(--color-green);
+    outline-offset: 4px;
     animation: tutorialPulse 1.4s ease-out infinite;
 }
 

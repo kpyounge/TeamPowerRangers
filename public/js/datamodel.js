@@ -168,12 +168,12 @@ const DataModel = (function () {
             return this.habitRequest("GET", "/api/habits/" + habitId + "/progress?today=" + today + "&days=" + days);
         },
 
-        //add a habit: habit = { name, time, status }
+        //add a habit: habit = { name, time, status, parent_habit_id }
         createHabit: function (habit) {
             return this.habitRequest("POST", "/api/habits", habit);
         },
 
-        //save changes to a habit: habit = { name, time, status }
+        //save changes to a habit: habit = { name, time, status, parent_habit_id }
         updateHabit: function (habitId, habit) {
             return this.habitRequest("PATCH", "/api/habits/" + habitId, habit);
         },

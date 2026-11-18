@@ -16,14 +16,7 @@
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
-      <!-- Light / dark mode toggle -->
-      <div class="theme-toggle-row">
-        <span>Light / Dark Mode</span>
-        <label class="theme-switch">
-            <input type="checkbox" id="themeToggle">
-            <span class="slider"></span>
-        </label>
-    </div>
+      
     <div class="container">
         <div class="header">
             <h1>Habit Stacks</h1>
@@ -56,6 +49,11 @@
                 <option value="afternoon">Afternoon</option>
                 <option value="evening">Evening</option>
                 <option value="night">Night</option>
+            </select>
+
+            <label for="parentHabitInput">Build on</label>
+            <select id="parentHabitInput">
+                <option value="">None - start a new stack</option>
             </select>
 
             <label for="habitStatusInput">Status</label>

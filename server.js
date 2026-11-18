@@ -363,7 +363,7 @@ app.patch('/api/users/me/preferences', authenticateToken, async (req, res) => {
 // ---------- HABITS ----------
 const HABIT_TIMES = ['morning', 'afternoon', 'evening', 'night'];
 const HABIT_STATUSES = ['working_on', 'current'];
-const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, time_of_day AS time, status, streak, sort_order';
+const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, time_of_day AS time, status, streak, sort_order, parent_habit_id';
 // ---------- STREAKS ----------
 function isValidDate(str) {
     if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -394,26 +394,50 @@ function calculateStreak(checkedDates, today) {
     }
     return streak;
 }
-// Returns the ids of the habits ABOVE this one in the same stack (same
-// time_of_day, earlier in sort_order / habit_id order) that are still
-// unchecked on the given date. These are the habits that were skipped.
+// Returns habits that should shake based on the Build on relationship.
 async function getSkippedHabitIds(connection, userId, habit, date) {
-    const [rows] = await connection.execute(
+    const shakeIds = [];
+
+    // If the clicked habit has an unchecked parent, shake the parent.
+    if (habit.parent_habit_id) {
+        const [parentRows] = await connection.execute(
+            `SELECT h.habit_id
+             FROM habit h
+             LEFT JOIN habit_check c
+               ON c.habit_id = h.habit_id
+              AND c.check_date = ?
+             WHERE h.habit_id = ?
+               AND h.user_id = ?
+               AND c.habit_id IS NULL`,
+            [date, habit.parent_habit_id, userId]
+        );
+
+        parentRows.forEach(row => shakeIds.push(row.habit_id));
+    }
+
+    // If the clicked habit has an unchecked child, shake the child.
+    const [childRows] = await connection.execute(
         `SELECT h.habit_id
          FROM habit h
-         LEFT JOIN habit_check c ON c.habit_id = h.habit_id AND c.check_date = ?
-         WHERE h.user_id = ? AND h.time_of_day = ?
-           AND (h.sort_order < ? OR (h.sort_order = ? AND h.habit_id < ?))
+         LEFT JOIN habit_check c
+           ON c.habit_id = h.habit_id
+          AND c.check_date = ?
+         WHERE h.parent_habit_id = ?
+           AND h.user_id = ?
            AND c.habit_id IS NULL`,
-        [date, userId, habit.time_of_day, habit.sort_order, habit.sort_order, habit.habit_id]
+        [date, habit.habit_id, userId]
     );
-    return rows.map(r => r.habit_id);
+
+    childRows.forEach(row => shakeIds.push(row.habit_id));
+
+    return shakeIds;
 }
+
 
 // Checks the name / stack / status sent from the add and edit forms.
 // Returns { error } or { name, time, status }.
 function validateHabit(body) {
-    const { name, time, status } = body || {};
+    const { name, time, status, parent_habit_id } = body || {};
     if (typeof name !== 'string' || name.trim().length === 0) {
         return { error: 'Habit name is required.' };
     }
@@ -426,7 +450,7 @@ function validateHabit(body) {
     if (!HABIT_STATUSES.includes(status)) {
         return { error: 'Please choose a valid status.' };
     }
-    return { name: name.trim(), time, status };
+    return { name: name.trim(), time, status, parent_habit_id: parent_habit_id || null };
 }
 
 // Route: Get the logged-in user's habits (in stack order).
@@ -497,7 +521,7 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
 
         // Only the owner can check a habit
         const [existing] = await connection.execute(
-            'SELECT habit_id, status, streak, time_of_day, sort_order FROM habit WHERE habit_id = ? AND user_id = ?',
+            'SELECT habit_id, status, streak, time_of_day, sort_order, parent_habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
             [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
@@ -641,14 +665,26 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
     try {
         const connection = await createConnection();
 
+        if(habit.parent_habit_id) {
+            const [parentRows] = await connection.execute(
+                'SELECT habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
+                [habit.parent_habit_id, req.user.user_id]
+            );
+
+            if (parentRows.length === 0) {
+                await connection.end();
+                return res.status(400).json({ message: 'Invalid parent habit.'});
+            }
+        }
+
         const [[max]] = await connection.execute(
             'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE user_id = ?',
             [req.user.user_id]
         );
 
         const [result] = await connection.execute(
-            'INSERT INTO habit (user_id, habit_name, time_of_day, status, sort_order) VALUES (?, ?, ?, ?, ?)',
-            [req.user.user_id, habit.name, habit.time, habit.status, max.maxOrder + 1]
+            'INSERT INTO habit (user_id, habit_name, time_of_day, status, sort_order, parent_habit_id) VALUES (?,?, ?, ?, ?, ?)',
+            [req.user.user_id, habit.name, habit.time, habit.status, max.maxOrder + 1, habit.parent_habit_id || null]
         );
 
         const [rows] = await connection.execute(

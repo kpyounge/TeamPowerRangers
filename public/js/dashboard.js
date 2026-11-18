@@ -144,9 +144,9 @@ function updateTutorialProgress() {
     }
 }
 
-// True when any stack (time of day) has two or more habits
+// True when at least one habit is built on another habit
 function hasStackOfTwo() {
-    return TIME_ORDER.some(time => habits.filter(h => h.time === time).length >= 2);
+    return habits.some(habit => habit.parent_habit_id);
 }
 
 // The server decides the order (sort_order), so keep our list in that order
@@ -193,6 +193,10 @@ function renderHabitRow(habit) {
         // "working_on" (in progress) or "current" (existing) gets its own class
     // so the CSS can style the two differently
     row.className = `habit-row ${habit.status} ${habit.completed ? 'completed' : ''}`;
+
+    if (habit.parent_habit_id) {
+        row.classList.add('child-habit');
+    }
     row.dataset.habitId = habit.id;
 
     const checkbox = document.createElement('input');
@@ -446,6 +450,25 @@ function openModal() {
     document.getElementById('habitNameInput').value = '';
     document.getElementById('habitTimeInput').value = 'morning';
     document.getElementById('habitStatusInput').value = 'working_on';
+
+    const parentSelect = document.getElementById('parentHabitInput');
+
+    parentSelect.innerHTML =
+    '<option value="">None - start a new stack</option>';
+    
+    habits.forEach(habit => {
+        const option = document.createElement('option');
+        option.value = habit.id;
+        option.textContent = habit.name;
+        parentSelect.appendChild(option);
+    });
+
+    if (habits.length > 0 && !habits.some(habit => habit.parent_habit_id)) {
+    parentSelect.classList.add('tutorial-highlight');
+    } else {
+    parentSelect.classList.remove('tutorial-highlight');
+}
+
     document.getElementById('habitModal').classList.remove('hidden');
 }
 
@@ -457,6 +480,8 @@ async function saveNewHabit() {
     const name = document.getElementById('habitNameInput').value.trim();
     const time = document.getElementById('habitTimeInput').value;
     const status = document.getElementById('habitStatusInput').value;
+    const parentHabitValue = document.getElementById('parentHabitInput').value;
+    const parent_habit_id = parentHabitValue ? Number(parentHabitValue) : null;
 
     if (!name) {
         return;
@@ -464,7 +489,7 @@ async function saveNewHabit() {
 
     const saveBtn = document.getElementById('modalSaveBtn');
     saveBtn.disabled = true;
-    const result = await DataModel.createHabit({ name, time, status });
+    const result = await DataModel.createHabit({ name, time, status, parent_habit_id });
     saveBtn.disabled = false;
 
     if (!result.ok) {
@@ -473,12 +498,19 @@ async function saveNewHabit() {
     }
 
     habits.push(toLocalHabit(result.data.habit));
-    sortHabits();
-    closeModal();
-    renderStacks();
-    endTutorial(); // the first saved habit finishes the tutorial
-    updateTutorialProgress(); // saves progress and shows the first-stack pop-up
-}
+        sortHabits();
+        closeModal();
+        renderStacks();
+
+    const isFirstHabit = habits.length === 1;
+
+        endTutorial();
+        updateTutorialProgress();
+
+        if (isFirstHabit) {
+    showSecondHabitPrompt();
+        }
+    }
 
 //////////////////////////////////////////
 //EDIT / DELETE HABIT MODAL
