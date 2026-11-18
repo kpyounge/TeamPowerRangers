@@ -459,14 +459,19 @@ body {
 
 /* Visual connector showing the stack relationship */
 .child-habit::before {
-    content: "↳";
+    content: "";
     position: absolute;
-    left: -30px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 24px;
-    font-weight: bold;
-    color: #000000;
+
+    left: -24px;
+    top: -4px;
+
+    width: 24px;
+    height: calc(50% + 4px);
+
+    border-left: 3px solid var(--color-text);
+    border-bottom: 3px solid var(--color-text);
+
+    border-bottom-left-radius: 10px;
 }
 
 /* ---------- In progress ("working on") vs existing ("current") ----------
