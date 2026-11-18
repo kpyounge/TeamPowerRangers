@@ -180,13 +180,28 @@ function renderStacks() {
             emptyMsg.textContent = 'No habits yet.';
             list.appendChild(emptyMsg);
         } else {
-            habitsForTime.forEach(habit => list.appendChild(renderHabitRow(habit)));
-        }
+    // Show each parent habit followed directly by the habits built on it
+    const parentHabits = habitsForTime.filter(habit => !habit.parent_habit_id);
+
+    parentHabits.forEach(parent => {
+        list.appendChild(renderHabitRow(parent));
+
+        const children = habitsForTime.filter(
+            habit => habit.parent_habit_id === parent.id
+        );
+
+        children.forEach(child => {
+            list.appendChild(renderHabitRow(child));
+            });
+        });
+    }
 
         section.appendChild(list);
         container.appendChild(section);
-    });
-}
+        });
+    }
+    
+
 
 function renderHabitRow(habit) {
     const row = document.createElement('div');

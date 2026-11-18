@@ -474,7 +474,7 @@ body {
    theme's text color (white in dark mode, black in light mode).
    Existing habits stay plain and regular weight. */
 .habit-row.working_on {
-    box-shadow: 0 0 0 3px var(--color-text);
+    box-shadow: none;
 }
 
 .habit-row.working_on .habit-name {
