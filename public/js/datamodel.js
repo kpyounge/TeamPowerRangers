@@ -152,6 +152,47 @@ const DataModel = (function () {
             }
         },
 
+        //fetch all custom stacks for the logged-in user
+        getStacks: function () {
+         return this.habitRequest("GET", "/api/stacks");
+          },
+
+        //create a new custom stack
+        createStack: function (stackName, color) {
+    return this.habitRequest("POST", "/api/stacks", {
+        stack_name: stackName,
+        color: color
+    });
+},
+        //rename a custom stack
+        renameStack: function (stackId, stackName) {
+            return this.habitRequest("PATCH", "/api/stacks/" + stackId, {
+                stack_name: stackName
+            });
+            },
+
+            //change a stack's color
+changeStackColor: function (stackId, color) {
+    return this.habitRequest(
+        "PATCH",
+        "/api/stacks/" + stackId + "/color",
+        {
+            color: color
+        }
+    );
+},
+
+//delete a custom stack
+deleteStack: function (stackId) {
+    return this.habitRequest("DELETE", "/api/stacks/" + stackId);
+},
+
+    //save a new top-to-bottom order for all stacks
+reorderStacks: function (stackIds) {
+    return this.habitRequest("PUT", "/api/stacks/reorder", {
+        ids: stackIds
+    });
+},
         //fetch the logged-in user's habits, in stack order
         getHabits: function (today) {
             return this.habitRequest("GET", "/api/habits?today=" + today);
@@ -168,12 +209,12 @@ const DataModel = (function () {
             return this.habitRequest("GET", "/api/habits/" + habitId + "/progress?today=" + today + "&days=" + days);
         },
 
-        //add a habit: habit = { name, time, status, parent_habit_id }
+        //add a habit: habit = { name, time, status, stack__id }
         createHabit: function (habit) {
             return this.habitRequest("POST", "/api/habits", habit);
         },
 
-        //save changes to a habit: habit = { name, time, status, parent_habit_id }
+        //save changes to a habit: habit = { name, time, status, stack_id }
         updateHabit: function (habitId, habit) {
             return this.habitRequest("PATCH", "/api/habits/" + habitId, habit);
         },

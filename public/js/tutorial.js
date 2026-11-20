@@ -34,7 +34,7 @@ const TUTORIAL_STEPS = [
     },
     {
         title: "Let's get started!",
-        text: 'Since you don\'t have any habits yet, let\'s build your first stack. Tap the "+" button to add your first habit. Then add a second habit and use "Build on" to connect it to your first habit.',
+        text: 'Since you don\'t have any habits yet, let\'s build your first stack. Tap the "+" button to add your first habit. Choose the stack where you want it to go.',
         avatar: 'images/tutorial-3.png'
     }
 ];
@@ -47,9 +47,9 @@ const FIRST_STACK_POPUP = {
     buttonLabel: "Let's go!"
 };
 
-const SECOND_HABIT_PROMPT = {
-    title: 'Build your stack',
-    text: 'Great! Now tap the "+" button again to add a habit to your stack. Use "Build on" to connect it to your first habit.',
+const STACK_CUSTOMIZE_PROMPT = {
+    title: 'Make your stacks yours!',
+    text: 'Great! Your dashboard starts with Morning, Afternoon, Evening, and Night. You can rename any stack using the three dots, or tap "+ Stack" to create more.',
     avatar: '/images/tutorial-3.png'
 };
 
@@ -178,7 +178,7 @@ function endTutorial() {
     setTutorialInert(false);
     document.getElementById('addHabitBtn').classList.remove('tutorial-highlight');
 }
-function showSecondHabitPrompt() {
+function showStackCustomizePrompt() {
     if (tutorialOverlay) {
         tutorialOverlay.remove();
     }
@@ -191,25 +191,40 @@ function showSecondHabitPrompt() {
     tutorialOverlay.className = 'tutorial-overlay pointing';
     document.body.appendChild(tutorialOverlay);
 
-    const addHabitBtn = document.getElementById('addHabitBtn');
+    const addStackBtn = document.getElementById('addStackBtn');
 
     const progress = document.createElement('span');
     progress.className = 'tutorial-progress';
-    progress.textContent = 'Build your first stack';
+    progress.textContent = 'Customize your stacks';
 
     tutorialOverlay.appendChild(
         buildChatCard(
-            SECOND_HABIT_PROMPT.title,
-            SECOND_HABIT_PROMPT.text,
-            SECOND_HABIT_PROMPT.avatar,
+            STACK_CUSTOMIZE_PROMPT.title,
+            STACK_CUSTOMIZE_PROMPT.text,
+            STACK_CUSTOMIZE_PROMPT.avatar,
             [progress]
         )
     );
 
-    addHabitBtn.inert = false;
-    addHabitBtn.classList.add('tutorial-highlight');
-    addHabitBtn.focus();
+    addStackBtn.inert = false;
+    addStackBtn.classList.add('tutorial-highlight');
+    addStackBtn.focus();
 }
+function endStackCustomizePrompt() {
+    if (tutorialOverlay) {
+        tutorialOverlay.remove();
+        tutorialOverlay = null;
+    }
+
+    tutorialActive = false;
+    document.body.classList.remove('tutorial-active');
+    setTutorialInert(false);
+
+    const addStackBtn = document.getElementById('addStackBtn');
+    addStackBtn.classList.remove('tutorial-highlight');
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////

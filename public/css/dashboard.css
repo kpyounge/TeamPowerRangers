@@ -87,7 +87,40 @@ body {
 #logoutButton:hover, #refreshButton:hover {
     opacity: 0.85;
 }
+/* ---------- Header action buttons ---------- */
+.add-stack-btn,
+.header-links a,
+#logoutButton {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 22px;
 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1;
+
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.add-stack-btn,
+.header-links a,
+#logoutButton {
+    background-color: var(--color-purple);
+    color: #FFFFFF;
+    border: 2px solid var(--color-purple);
+}
+
+.add-stack-btn:hover,
+.header-links a:hover,
+#logoutButton:hover {
+    opacity: 0.85;
+}
 /* ---------- Stacks ---------- */
 .stacks-container {
     display: flex;
@@ -111,7 +144,143 @@ body {
 .stack-section.afternoon { background-color: var(--color-pink); }
 .stack-section.evening   { background-color: var(--color-purple); }
 .stack-section.night     { background-color: var(--color-orange); }
+.stack-section.custom-green {background-color: var(--color-green);}
 
+/* ---------- Stack header + options button ---------- */
+.stack-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stack-header h2 {
+    margin: 0 0 0 4px;
+}
+
+/* ---------- Stack reorder handle ---------- */
+.stack-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stack-drag-handle {
+    background: transparent;
+    border: none;
+    color: #000000;
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.stack-drag-handle:hover,
+.stack-drag-handle:focus-visible {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.stack-dragging {
+    z-index: 30;
+    opacity: 0.9;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.stack-dragging .stack-drag-handle {
+    cursor: grabbing;
+}
+
+.stack-drop-before {
+    box-shadow: 0 -5px 0 #FFFFFF;
+}
+
+.stack-drop-after {
+    box-shadow: 0 5px 0 #FFFFFF;
+}
+
+.stack-options-btn {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+
+    color: #000000;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.stack-options-btn:hover,
+.stack-options-btn:focus-visible {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ---------- Stack Rename / Delete dropdown ---------- */
+.stack-header {
+    position: relative;
+}
+
+.stack-options-menu {
+    position: absolute;
+    top: 42px;
+    right: 0;
+    z-index: 20;
+
+    width: 150px;
+    padding: 6px;
+
+    background-color: var(--row-bg);
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    border-radius: 12px;
+
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.stack-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 10px 12px;
+
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.stack-menu-item:hover,
+.stack-menu-item:focus-visible {
+    background-color: var(--color-purple);
+    color: #FFFFFF;
+}
+
+.stack-menu-item.delete:hover,
+.stack-menu-item.delete:focus-visible {
+    background-color: var(--color-pink);
+    color: #FFFFFF;
+}
 
 .habit-list {
     display: flex;
@@ -257,6 +426,86 @@ body {
     max-width: 360px;
 }
 
+/* ---------- Stack color picker ---------- */
+.stack-color-picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+.stack-color-option {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.stack-color-option.cyan {
+    background-color: var(--color-cyan);
+}
+
+.stack-color-option.pink {
+    background-color: var(--color-pink);
+}
+
+.stack-color-option.purple {
+    background-color: var(--color-purple);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.stack-color-option.orange {
+    background-color: var(--color-orange);
+}
+
+.stack-color-option.green {
+    background-color: var(--color-green);
+}
+
+.stack-color-option:hover {
+    transform: scale(1.08);
+}
+
+.stack-color-option.selected {
+    border-color: #FFFFFF;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25);
+}
+
+.stack-color-option:focus-visible {
+    outline: 3px solid #FFFFFF;
+    outline-offset: 3px;
+}
+
+/* ---------- Delete Stack warning box ---------- */
+.delete-stack-warning {
+    margin: 18px 0;
+    padding: 16px;
+
+    background-color: rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+}
+
+.delete-stack-warning strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.delete-stack-warning p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+.delete-stack-undo {
+    margin-top: 18px;
+    opacity: 0.85;
+}
 .modal-box h2 {
     margin-top: 0;
 }

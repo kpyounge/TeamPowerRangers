@@ -9,9 +9,14 @@
 
 // The logged-in user's habits, in stack order. Filled in by loadHabits().
 let habits = [];
+let stacks = [];
+let coloringStackId = null;
+let selectedEditStackColor = 'green';
 
 // The id of the habit currently open in the edit pop-up
 let editingHabitId = null;
+let renamingStackId = null;
+let deletingStackId = null;
 
 // How far the user is through the tutorial, saved on their account:
 //   "new"         - hasn't added a first habit yet
@@ -20,17 +25,10 @@ let editingHabitId = null;
 // Defaults to "complete" so that if it can't be loaded, nothing pops up.
 let tutorialStatus = 'complete';
 
-const TIME_LABELS = {
-    morning: 'Morning',
-    afternoon: 'Afternoon',
-    evening: 'Evening',
-    night: 'Night'
-};
-const TIME_ORDER = ['morning', 'afternoon', 'evening', 'night'];
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    //////////////////////////////////////////
+    ///////////i d///////////////////////////////
     //JWT CHECK - redirect to logon if missing
     //////////////////////////////////////////
     const token = localStorage.getItem('jwtToken');
@@ -48,7 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const habitModal = document.getElementById('habitModal');
     const modalCancelBtn = document.getElementById('modalCancelBtn');
     const modalSaveBtn = document.getElementById('modalSaveBtn');
-
+    const addStackBtn = document.getElementById('addStackBtn');
+    const stackModal = document.getElementById('stackModal');
+    const stackCancelBtn = document.getElementById('stackCancelBtn');
+    const stackSaveBtn = document.getElementById('stackSaveBtn');
+    const renameStackModal = document.getElementById('renameStackModal');
+    const renameStackInput = document.getElementById('renameStackInput');
+    const renameStackCancelBtn = document.getElementById('renameStackCancelBtn');
+    const renameStackSaveBtn = document.getElementById('renameStackSaveBtn');
+    const deleteStackModal = document.getElementById('deleteStackModal');
+    const deleteStackMessage = document.getElementById('deleteStackMessage');
+    const deleteStackCancelBtn = document.getElementById('deleteStackCancelBtn');
+    const deleteStackConfirmBtn = document.getElementById('deleteStackConfirmBtn');
     //////////////////////////////////////////
     //EVENT LISTENERS
     //////////////////////////////////////////
@@ -56,6 +65,41 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('jwtToken');
         window.location.href = '/';
     });
+    addStackBtn.addEventListener('click', () => openStackModal());
+    stackCancelBtn.addEventListener('click', () => closeStackModal());
+    stackSaveBtn.addEventListener('click', () => saveNewStack());
+    document.querySelectorAll('.stack-color-option').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.stack-color-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+
+        button.classList.add('selected');
+        selectedStackColor = button.dataset.color;
+    });
+});
+    renameStackCancelBtn.addEventListener('click', () => closeRenameStackModal());
+    renameStackSaveBtn.addEventListener('click', () => saveRenamedStack());
+
+    document
+    .getElementById('changeStackColorCancelBtn')
+    .addEventListener('click', () => closeChangeStackColorModal());
+document
+    .getElementById('changeStackColorSaveBtn')
+    .addEventListener('click', () => saveChangedStackColor());
+document.querySelectorAll('.edit-stack-color-option').forEach(button => {
+    button.addEventListener('click', () => {
+        document.querySelectorAll('.edit-stack-color-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+
+        button.classList.add('selected');
+        selectedEditStackColor = button.dataset.color;
+    });
+});
+
+deleteStackCancelBtn.addEventListener('click', () => closeDeleteStackModal());
+deleteStackConfirmBtn.addEventListener('click', () => confirmDeleteStack());
 
     addHabitBtn.addEventListener('click', () => openModal());
     modalCancelBtn.addEventListener('click', () => closeModal());
@@ -64,11 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('editCancelBtn').addEventListener('click', () => closeEditModal());
     document.getElementById('editSaveBtn').addEventListener('click', () => saveEditedHabit());
     document.getElementById('deleteHabitBtn').addEventListener('click', () => deleteEditedHabit());
+    document.getElementById('deleteHabitCancelBtn').addEventListener('click', () => closeDeleteHabitModal());
+    document.getElementById('deleteHabitConfirmBtn').addEventListener('click', () => confirmDeleteHabit());
 
     //////////////////////////////////////////
     //INITIAL LOAD
     //////////////////////////////////////////
-    loadHabits();
+    loadDashboard();
 });
 
 // Today's date in the user's own time zone, as YYYY-MM-DD
@@ -79,43 +125,47 @@ function todayString() {
     return `${now.getFullYear()}-${month}-${day}`;
 }
 
-//////////////////////////////////////////
-//LOAD HABITS FROM THE SERVER
-//////////////////////////////////////////
-async function loadHabits() {
-    // Load the habits and the user's tutorial progress at the same time
-    const [result, user] = await Promise.all([
+    //////////////////////////////////////////
+    //LOAD STACKS + HABITS FROM THE SERVER
+    //////////////////////////////////////////
+    async function loadDashboard() {
+    const [stackResult, habitResult, user] = await Promise.all([
+        DataModel.getStacks(),
         DataModel.getHabits(todayString()),
         DataModel.getCurrentUser()
     ]);
 
-    if (!result.ok) {
-        // An expired or invalid token means the user has to log in again
-        if (result.status === 401 || result.status === 403) {
-            localStorage.removeItem('jwtToken');
-            window.location.href = '/';
+        if (!stackResult.ok) {
+            document.getElementById('stacksContainer').textContent = stackResult.error;
             return;
         }
-        document.getElementById('stacksContainer').textContent = result.error;
-        return;
-    }
 
-    habits = result.data.habits.map(toLocalHabit);
-    renderStacks();
+        if (!habitResult.ok) {
+            if (habitResult.status === 401 || habitResult.status === 403) {
+                localStorage.removeItem('jwtToken');
+                window.location.href = '/';
+                return;
+            }
 
+            document.getElementById('stacksContainer').textContent = habitResult.error;
+            return;
+        }
 
-    tutorialStatus = (user && user.tutorial_status) || 'complete';
+        stacks = stackResult.data.stacks;
+        habits = habitResult.data.habits.map(toLocalHabit);
 
-    if (tutorialStatus === 'new') {
-        if (habits.length === 0) {
-            // First-time user: show the tutorial
-            startTutorial();
-        } else {
-            // Already has habits
-            saveTutorialStatus('complete');
+        renderStacks();
+
+        tutorialStatus = (user && user.tutorial_status) || 'complete';
+
+        if (tutorialStatus === 'new') {
+            if (habits.length === 0) {
+                startTutorial();
+            } else {
+                saveTutorialStatus('complete');
+            }
         }
     }
-}
 
 // The server sends "completed" (checked today?) and "streak" with each habit
 function toLocalHabit(serverHabit) {
@@ -135,19 +185,11 @@ async function saveTutorialStatus(status) {
 // Called after a new habit is saved
 function updateTutorialProgress() {
     if (tutorialStatus === 'new') {
-        // They just added their first habit, so the tutorial is done
+        // First habit added; next tutorial teaches stack customization
         saveTutorialStatus('first_habit');
-    } else if (tutorialStatus === 'first_habit' && hasStackOfTwo()) {
-        // Their first stack: celebrate once, then never show it again
-        showFirstStackPopup();
-        saveTutorialStatus('complete');
     }
 }
 
-// True when at least one habit is built on another habit
-function hasStackOfTwo() {
-    return habits.some(habit => habit.parent_habit_id);
-}
 
 // The server decides the order (sort_order), so keep our list in that order
 function sortHabits() {
@@ -161,46 +203,95 @@ function renderStacks() {
     const container = document.getElementById('stacksContainer');
     container.innerHTML = '';
 
-    TIME_ORDER.forEach(timeKey => {
+    if (stacks.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'empty-stack-msg';
+        emptyMsg.textContent = 'No stacks yet. Create your first stack!';
+        container.appendChild(emptyMsg);
+        return;
+    }
+
+    stacks.forEach(stack => {
         const section = document.createElement('div');
-        section.className = `stack-section ${timeKey}`;
+        section.className = 'stack-section';
+
+        const stackColorClasses = {
+            cyan: 'morning',
+             pink: 'afternoon',
+             purple: 'evening',
+             orange: 'night',
+            green: 'custom-green'
+            };
+
+section.classList.add(
+    stackColorClasses[stack.color] || 'custom-green'
+);
+
+section.dataset.stackId = stack.stack_id;   
+
+        const stackHeader = document.createElement('div');
+        stackHeader.className = 'stack-header';
 
         const heading = document.createElement('h2');
-        heading.textContent = TIME_LABELS[timeKey];
-        section.appendChild(heading);
+        heading.textContent = stack.stack_name;
+        const stackDragHandle = document.createElement('button');
+        stackDragHandle.type = 'button';
+        stackDragHandle.className = 'stack-drag-handle';
+        stackDragHandle.textContent = '☰';
+        stackDragHandle.title = 'Drag to reorder stack';
+        stackDragHandle.setAttribute(
+    'aria-label',
+    `Reorder ${stack.stack_name}`
+);
+
+stackDragHandle.addEventListener('pointerdown', (event) => {
+    startStackDrag(event, section);
+});
+        const optionsBtn = document.createElement('button');
+        optionsBtn.type = 'button';
+        optionsBtn.className = 'stack-options-btn';
+        optionsBtn.textContent = '\u22EE';
+        optionsBtn.title = 'Stack options';
+        optionsBtn.setAttribute(
+            'aria-label',
+            `Options for ${stack.stack_name}`
+        );
+        optionsBtn.addEventListener('click', () => {
+    showStackOptions(stack.stack_id, optionsBtn);
+    }); 
+        const stackTitleGroup = document.createElement('div');
+        stackTitleGroup.className = 'stack-title-group';
+
+        stackTitleGroup.appendChild(stackDragHandle);
+        stackTitleGroup.appendChild(heading);
+
+        stackHeader.appendChild(stackTitleGroup);
+        stackHeader.appendChild(optionsBtn);
+        section.appendChild(stackHeader);
 
         const list = document.createElement('div');
         list.className = 'habit-list';
 
-        const habitsForTime = habits.filter(h => h.time === timeKey);
+        const stackHabits = habits.filter(
+            habit => habit.stack_id === stack.stack_id
+        );
 
-        if (habitsForTime.length === 0) {
+        if (stackHabits.length === 0) {
             const emptyMsg = document.createElement('div');
             emptyMsg.className = 'empty-stack-msg';
             emptyMsg.textContent = 'No habits yet.';
             list.appendChild(emptyMsg);
         } else {
-    // Show each parent habit followed directly by the habits built on it
-    const parentHabits = habitsForTime.filter(habit => !habit.parent_habit_id);
-
-    parentHabits.forEach(parent => {
-        list.appendChild(renderHabitRow(parent));
-
-        const children = habitsForTime.filter(
-            habit => habit.parent_habit_id === parent.id
-        );
-
-        children.forEach(child => {
-            list.appendChild(renderHabitRow(child));
+            stackHabits.forEach(habit => {
+                list.appendChild(renderHabitRow(habit));
             });
-        });
-    }
+        }
 
         section.appendChild(list);
         container.appendChild(section);
-        });
-    }
-    
+    });
+}
+        
 
 
 function renderHabitRow(habit) {
@@ -209,9 +300,6 @@ function renderHabitRow(habit) {
     // so the CSS can style the two differently
     row.className = `habit-row ${habit.status} ${habit.completed ? 'completed' : ''}`;
 
-    if (habit.parent_habit_id) {
-        row.classList.add('child-habit');
-    }
     row.dataset.habitId = habit.id;
 
     const checkbox = document.createElement('input');
@@ -277,6 +365,132 @@ function renderHabitRow(habit) {
 // While dragging, the row follows the pointer and a black line shows
 // where it will land. When the pointer is released the new order is
 // saved to the database. Works with mouse and touch.
+// Drag an entire stack up or down
+function startStackDrag(event, section) {
+    if (event.button > 0) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const container = section.parentElement;
+    const startY = event.clientY;
+
+    let dropTarget = null;
+    let moved = false;
+
+    section.classList.add('stack-dragging');
+    document.body.classList.add('is-dragging');
+
+    function clearStackMarkers() {
+        container
+            .querySelectorAll('.stack-drop-before, .stack-drop-after')
+            .forEach(stack => {
+                stack.classList.remove(
+                    'stack-drop-before',
+                    'stack-drop-after'
+                );
+            });
+    }
+
+    function onMove(e) {
+        moved = true;
+
+        section.style.transform =
+            `translateY(${e.clientY - startY}px)`;
+
+        clearStackMarkers();
+
+        const otherStacks = [
+            ...container.querySelectorAll('.stack-section')
+        ].filter(stack => stack !== section);
+
+        dropTarget = otherStacks.find(stack => {
+            const box = stack.getBoundingClientRect();
+
+            return e.clientY < box.top + box.height / 2;
+        }) || null;
+
+        if (dropTarget) {
+            dropTarget.classList.add('stack-drop-before');
+        } else if (otherStacks.length > 0) {
+            otherStacks[
+                otherStacks.length - 1
+            ].classList.add('stack-drop-after');
+        }
+    }
+
+    function stopDragging() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onCancel);
+
+        clearStackMarkers();
+
+        section.classList.remove('stack-dragging');
+        section.style.transform = '';
+
+        document.body.classList.remove('is-dragging');
+    }
+
+    function onUp() {
+        stopDragging();
+
+        if (!moved) {
+            return;
+        }
+
+        if (dropTarget) {
+            container.insertBefore(section, dropTarget);
+        } else {
+            container.appendChild(section);
+        }
+
+        const orderedIds = [
+            ...container.querySelectorAll('.stack-section')
+        ].map(stack => Number(stack.dataset.stackId));
+
+        saveStackOrderToServer(orderedIds);
+    }
+
+    function onCancel() {
+        stopDragging();
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+}
+
+// Save the new stack order on the page and in the database
+async function saveStackOrderToServer(orderedIds) {
+    // Update the local stack order
+    orderedIds.forEach((id, index) => {
+        const stack = stacks.find(s => s.stack_id === id);
+
+        if (stack) {
+            stack.sort_order = index + 1;
+        }
+    });
+
+    // Put the stacks array in the same order
+    stacks.sort((a, b) => a.sort_order - b.sort_order);
+
+    // Save the order to MySQL
+    const result = await DataModel.reorderStacks(orderedIds);
+
+    if (!result.ok) {
+        alert(`${result.error} The stack order was not saved.`);
+
+        // Reload the real order from the database if saving failed
+        loadDashboard();
+        return;
+    }
+
+    // Re-render so colors follow the new stack positions
+    renderStacks();
+}
+
 function startDrag(event, row) {
     if (event.button > 0) {
         return; // ignore right / middle click
@@ -396,7 +610,7 @@ async function saveStackOrder(orderedIds, focusId) {
     const result = await DataModel.reorderHabits(orderedIds);
     if (!result.ok) {
         alert(`${result.error} Your new order was not saved.`);
-        loadHabits(); // put the page back to what the database has
+        loadDashboard(); // put the page back to what the database has
     }
 }
 
@@ -431,10 +645,10 @@ async function toggleHabit(habitId, isChecked) {
     }
     renderStacks();
 
-    // The server sends back the habits above this one in the stack that
-    // are still unchecked. Shake those (the skipped ones), not the one
-    // that was just checked.
-    (result.data.skippedIds || []).forEach(id => shakeHabitRow(id));
+// Shake the other unchecked habits in the same stack
+(result.data.skippedIds || []).forEach(id => {
+    shakeHabitRow(id);
+});
 }
 
 // Briefly shakes a habit row (renderStacks must have already run,
@@ -457,32 +671,329 @@ function showToast(message) {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 4000);
 }
+//////////////////////////////////////////
+//CREATE STACK MODAL
+//////////////////////////////////////////
+function openStackModal() {
+    const input = document.getElementById('stackNameInput');
+    input.value = '';
+
+    selectedStackColor = 'green';
+
+    document.querySelectorAll('.stack-color-option').forEach(option => {
+        option.classList.toggle(
+            'selected',
+            option.dataset.color === 'green'
+        );
+    });
+
+    document.getElementById('stackModal').classList.remove('hidden');
+    input.focus();
+}
+
+function closeStackModal() {
+    document.getElementById('stackModal').classList.add('hidden');
+}
+
+async function saveNewStack() {
+    const input = document.getElementById('stackNameInput');
+    const stackName = input.value.trim();
+
+    if (!stackName) {
+        return;
+    }
+
+    const saveBtn = document.getElementById('stackSaveBtn');
+    saveBtn.disabled = true;
+
+    const result = await DataModel.createStack(
+    stackName,
+    selectedStackColor
+);
+
+    saveBtn.disabled = false;
+
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
+
+    stacks.push(result.data.stack);
+closeStackModal();
+renderStacks();
+
+if (tutorialStatus === 'first_habit') {
+    endStackCustomizePrompt();
+    showFirstStackPopup();
+    saveTutorialStatus('complete');
+}
+}
+function showStackOptions(stackId, button) {
+    // Close any stack menu already open
+    document.querySelectorAll('.stack-options-menu').forEach(menu => {
+        menu.remove();
+    });
+
+    const menu = document.createElement('div');
+    menu.className = 'stack-options-menu';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.type = 'button';
+    renameBtn.className = 'stack-menu-item';
+    renameBtn.textContent = '✎ Rename';
+
+    renameBtn.addEventListener('click', () => {
+        menu.remove();
+        renameStack(stackId);
+    });
+    const colorBtn = document.createElement('button');
+colorBtn.type = 'button';
+colorBtn.className = 'stack-menu-item';
+colorBtn.textContent = '🎨 Change Color';
+
+colorBtn.addEventListener('click', () => {
+    menu.remove();
+    openChangeStackColorModal(stackId);
+});
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'stack-menu-item delete';
+    deleteBtn.textContent = '🗑 Delete';
+
+    deleteBtn.addEventListener('click', () => {
+        menu.remove();
+        deleteStack(stackId);
+    });
+
+    menu.append(renameBtn, colorBtn, deleteBtn);
+button.parentElement.appendChild(menu);
+
+// Close the menu when the user clicks anywhere outside it
+setTimeout(() => {
+    document.addEventListener('click', function closeMenu(event) {
+        if (!menu.contains(event.target) && event.target !== button) {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}, 0);
+}
+
+function openChangeStackColorModal(stackId) {
+    const stack = stacks.find(s => s.stack_id === stackId);
+
+    if (!stack) {
+        return;
+    }
+
+    coloringStackId = stackId;
+    selectedEditStackColor = stack.color || 'green';
+
+    document.querySelectorAll('.edit-stack-color-option').forEach(option => {
+        option.classList.toggle(
+            'selected',
+            option.dataset.color === selectedEditStackColor
+        );
+    });
+
+    document
+        .getElementById('changeStackColorModal')
+        .classList.remove('hidden');
+}
+
+
+function closeChangeStackColorModal() {
+    document
+        .getElementById('changeStackColorModal')
+        .classList.add('hidden');
+
+    coloringStackId = null;
+}
+async function saveChangedStackColor() {
+    if (coloringStackId === null) {
+        return;
+    }
+
+    const saveBtn = document.getElementById('changeStackColorSaveBtn');
+    saveBtn.disabled = true;
+
+    const result = await DataModel.changeStackColor(
+        coloringStackId,
+        selectedEditStackColor
+    );
+
+    saveBtn.disabled = false;
+
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
+
+    const stack = stacks.find(
+        s => s.stack_id === coloringStackId
+    );
+
+    if (stack) {
+        stack.color = selectedEditStackColor;
+    }
+
+    closeChangeStackColorModal();
+    renderStacks();
+}
+function renameStack(stackId) {
+    const stack = stacks.find(s => s.stack_id === stackId);
+
+    if (!stack) {
+        return;
+    }
+
+    renamingStackId = stackId;
+
+    const input = document.getElementById('renameStackInput');
+    input.value = stack.stack_name;
+
+    document.getElementById('renameStackModal').classList.remove('hidden');
+
+    input.focus();
+    input.select();
+}
+
+
+function closeRenameStackModal() {
+    document.getElementById('renameStackModal').classList.add('hidden');
+    renamingStackId = null;
+}
+
+
+async function saveRenamedStack() {
+    const input = document.getElementById('renameStackInput');
+    const newName = input.value.trim();
+
+    if (!newName || renamingStackId === null) {
+        return;
+    }
+
+    const saveBtn = document.getElementById('renameStackSaveBtn');
+    saveBtn.disabled = true;
+
+    const result = await DataModel.renameStack(
+        renamingStackId,
+        newName
+    );
+
+    saveBtn.disabled = false;
+
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
+
+    const stack = stacks.find(s => s.stack_id === renamingStackId);
+
+    if (stack) {
+        stack.stack_name = newName;
+    }
+
+    closeRenameStackModal();
+    renderStacks();
+}
+
+function deleteStack(stackId) {
+    const stack = stacks.find(s => s.stack_id === stackId);
+
+    if (!stack) {
+        return;
+    }
+
+    deletingStackId = stackId;
+
+    // Count the habits inside this stack
+    const habitCount = habits.filter(
+        habit => habit.stack_id === stackId
+    ).length;
+
+    const message = document.getElementById('deleteStackMessage');
+    const warning = document.getElementById('deleteStackWarning');
+    const warningTitle = document.getElementById('deleteStackWarningTitle');
+    const deleteBtn = document.getElementById('deleteStackConfirmBtn');
+
+    message.textContent =
+        `Are you sure you want to delete "${stack.stack_name}"?`;
+
+    if (habitCount > 0) {
+        warning.hidden = false;
+
+        warningTitle.textContent =
+            `⚠ This stack contains ${habitCount} ${habitCount === 1 ? 'habit' : 'habits'}.`;
+
+        deleteBtn.textContent = 'Delete Stack & Habits';
+    } else {
+        warning.hidden = true;
+        warningTitle.textContent = '';
+
+        deleteBtn.textContent = 'Delete Stack';
+    }
+
+    document.getElementById('deleteStackModal').classList.remove('hidden');
+}
+
+
+function closeDeleteStackModal() {
+    document.getElementById('deleteStackModal').classList.add('hidden');
+    deletingStackId = null;
+}
+
+
+async function confirmDeleteStack() {
+    if (deletingStackId === null) {
+        return;
+    }
+
+    const deleteBtn = document.getElementById('deleteStackConfirmBtn');
+    deleteBtn.disabled = true;
+
+    const result = await DataModel.deleteStack(deletingStackId);
+
+    deleteBtn.disabled = false;
+
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
+
+    // Remove the deleted stack's habits from the page
+habits = habits.filter(
+    habit => habit.stack_id !== deletingStackId
+);
+
+// Remove the stack itself
+stacks = stacks.filter(
+    stack => stack.stack_id !== deletingStackId
+);
+
+closeDeleteStackModal();
+renderStacks();
+}
 
 //////////////////////////////////////////
 //ADD HABIT MODAL
 //////////////////////////////////////////
 function openModal() {
     document.getElementById('habitNameInput').value = '';
-    document.getElementById('habitTimeInput').value = 'morning';
     document.getElementById('habitStatusInput').value = 'working_on';
 
-    const parentSelect = document.getElementById('parentHabitInput');
+    const stackSelect = document.getElementById('habitStackInput');
 
-    parentSelect.innerHTML =
-    '<option value="">None - start a new stack</option>';
-    
-    habits.forEach(habit => {
+    stackSelect.innerHTML =
+        '<option value="">Choose a stack</option>';
+
+    stacks.forEach(stack => {
         const option = document.createElement('option');
-        option.value = habit.id;
-        option.textContent = habit.name;
-        parentSelect.appendChild(option);
+        option.value = stack.stack_id;
+        option.textContent = stack.stack_name;
+        stackSelect.appendChild(option);
     });
-
-    if (habits.length > 0 && !habits.some(habit => habit.parent_habit_id)) {
-    parentSelect.classList.add('tutorial-highlight');
-    } else {
-    parentSelect.classList.remove('tutorial-highlight');
-}
 
     document.getElementById('habitModal').classList.remove('hidden');
 }
@@ -493,18 +1004,28 @@ function closeModal() {
 
 async function saveNewHabit() {
     const name = document.getElementById('habitNameInput').value.trim();
-    const time = document.getElementById('habitTimeInput').value;
     const status = document.getElementById('habitStatusInput').value;
-    const parentHabitValue = document.getElementById('parentHabitInput').value;
-    const parent_habit_id = parentHabitValue ? Number(parentHabitValue) : null;
+    const stackValue = document.getElementById('habitStackInput').value;
+    const stack_id = Number(stackValue);
 
     if (!name) {
         return;
     }
 
+    if (!stackValue) {
+        alert('Please choose a stack.');
+        return;
+    }
+
     const saveBtn = document.getElementById('modalSaveBtn');
     saveBtn.disabled = true;
-    const result = await DataModel.createHabit({ name, time, status, parent_habit_id });
+
+    const result = await DataModel.createHabit({
+        name,
+        status,
+        stack_id
+    });
+
     saveBtn.disabled = false;
 
     if (!result.ok) {
@@ -513,35 +1034,49 @@ async function saveNewHabit() {
     }
 
     habits.push(toLocalHabit(result.data.habit));
-        sortHabits();
-        closeModal();
-        renderStacks();
+    sortHabits();
+    closeModal();
+    renderStacks();
 
     const isFirstHabit = habits.length === 1;
 
-        endTutorial();
-        updateTutorialProgress();
+    endTutorial();
+    updateTutorialProgress();
 
-        if (isFirstHabit) {
-    showSecondHabitPrompt();
-        }
+    if (isFirstHabit) {
+        showStackCustomizePrompt();
     }
+}
 
 //////////////////////////////////////////
 //EDIT / DELETE HABIT MODAL
 //////////////////////////////////////////
 function openEditModal(habitId) {
     const habit = habits.find(h => h.id === habitId);
+
     if (!habit) {
         return;
     }
 
     editingHabitId = habitId;
 
-    // Auto-fill the form with the habit's current values
+    // Fill in the habit's current information
     document.getElementById('editHabitNameInput').value = habit.name;
-    document.getElementById('editHabitTimeInput').value = habit.time;
     document.getElementById('editHabitStatusInput').value = habit.status;
+
+    const stackSelect = document.getElementById('editHabitStackInput');
+
+    stackSelect.innerHTML =
+        '<option value="">Choose a stack</option>';
+
+    stacks.forEach(stack => {
+        const option = document.createElement('option');
+        option.value = stack.stack_id;
+        option.textContent = stack.stack_name;
+        stackSelect.appendChild(option);
+    });
+
+    stackSelect.value = habit.stack_id;
 
     document.getElementById('editHabitError').hidden = true;
     document.getElementById('editHabitModal').classList.remove('hidden');
@@ -568,16 +1103,28 @@ function setEditButtonsDisabled(disabled) {
 
 async function saveEditedHabit() {
     const name = document.getElementById('editHabitNameInput').value.trim();
-    const time = document.getElementById('editHabitTimeInput').value;
     const status = document.getElementById('editHabitStatusInput').value;
+    const stackValue = document.getElementById('editHabitStackInput').value;
+    const stack_id = Number(stackValue);
 
     if (!name) {
         showEditError('Habit name is required.');
         return;
     }
 
+    if (!stackValue) {
+        showEditError('Please choose a stack.');
+        return;
+    }
+
     setEditButtonsDisabled(true);
-    const result = await DataModel.updateHabit(editingHabitId, { name, time, status });
+
+    const result = await DataModel.updateHabit(editingHabitId, {
+        name,
+        status,
+        stack_id
+    });
+
     setEditButtonsDisabled(false);
 
     if (!result.ok) {
@@ -585,10 +1132,8 @@ async function saveEditedHabit() {
         return;
     }
 
-    // Only change the page after the server confirms the save. Merging
-    // keeps the checkbox/streak state; the server's sort_order moves the
-    // habit to the end of the list if its stack changed.
     const habit = habits.find(h => h.id === editingHabitId);
+
     if (habit) {
         Object.assign(habit, result.data.habit);
         sortHabits();
@@ -598,37 +1143,51 @@ async function saveEditedHabit() {
     renderStacks();
 }
 
-async function deleteEditedHabit() {
+function deleteEditedHabit() {
     const habit = habits.find(h => h.id === editingHabitId);
+
     if (!habit) {
         return;
     }
 
-    if (!confirm(`Delete "${habit.name}"? This can't be undone.`)) {
+    document.getElementById('deleteHabitMessage').textContent =
+        `Are you sure you want to delete "${habit.name}"?`;
+
+    document.getElementById('editHabitModal').classList.add('hidden');
+    document.getElementById('deleteHabitModal').classList.remove('hidden');
+}
+
+
+function closeDeleteHabitModal() {
+    document.getElementById('deleteHabitModal').classList.add('hidden');
+    document.getElementById('editHabitModal').classList.remove('hidden');
+}
+
+
+async function confirmDeleteHabit() {
+    if (editingHabitId === null) {
         return;
     }
 
-    setEditButtonsDisabled(true);
+    const deleteBtn = document.getElementById('deleteHabitConfirmBtn');
+    deleteBtn.disabled = true;
+
     const result = await DataModel.deleteHabit(editingHabitId);
-    setEditButtonsDisabled(false);
+
+    deleteBtn.disabled = false;
 
     if (!result.ok) {
+        document.getElementById('deleteHabitModal').classList.add('hidden');
+        document.getElementById('editHabitModal').classList.remove('hidden');
         showEditError(result.error);
         return;
     }
 
     habits = habits.filter(h => h.id !== editingHabitId);
-    closeEditModal();
+
+    document.getElementById('deleteHabitModal').classList.add('hidden');
+
+    editingHabitId = null;
+
     renderStacks();
 }
-
-//////////////////////////////////////////
-//LIGHT / DARK MODE TOGGLE
-//////////////////////////////////////////
-// Set the switch's starting position to match whatever theme is
-// currently applied (checked = light, unchecked = dark).
-themeToggle.checked = Theme.get() === 'light';
-
-themeToggle.addEventListener('change', () => {
-    Theme.apply(themeToggle.checked ? 'light' : 'dark');
-});

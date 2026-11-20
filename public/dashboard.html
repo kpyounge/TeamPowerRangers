@@ -19,21 +19,191 @@
       
     <div class="container">
         <div class="header">
-            <h1>Habit Stacks</h1>
-            <div class="header-links">
-                <a href="profilepage.html">Profile</a>
-                <button id="logoutButton">Log Out</button>
-            </div>
-        </div>
+    <h1>Habit Stacks</h1>
 
-        <!-- Habit stacks are grouped by time of day. For Sprint 1 this is a
-             static layout built from sample data in dashboard.js - no
-             backend habit routes exist yet, so nothing here is saved. -->
-        <div class="stacks-container" id="stacksContainer"></div>
+    <div class="header-links">
+        <button id="addStackBtn" class="add-stack-btn">+ Stack</button>
+        <a href="profilepage.html">Profile</a>
+        <button id="logoutButton">Log Out</button>
+     </div>
     </div>
 
+        <!-- Custom habit stacks created by the user are rendered here. -->
+        <div class="stacks-container" id="stacksContainer"></div>
+    </div>
+    <!-- Create a new custom stack -->
+    <div id="stackModal" class="modal-overlay hidden">
+     <div class="modal-box">
+            <h2>Create a Stack</h2>
+
+         <label for="stackNameInput">Stack name</label>
+         <input
+            type="text"
+            id="stackNameInput"
+            placeholder="e.g. Morning Routine"
+            maxlength="100"
+         >
+        <label>Stack color</label>
+
+<div class="stack-color-picker">
+    <button
+        type="button"
+        class="stack-color-option cyan"
+        data-color="cyan"
+        aria-label="Cyan"
+    ></button>
+
+    <button
+        type="button"
+        class="stack-color-option pink"
+        data-color="pink"
+        aria-label="Pink"
+    ></button>
+
+    <button
+        type="button"
+        class="stack-color-option purple"
+        data-color="purple"
+        aria-label="Purple"
+    ></button>
+
+    <button
+        type="button"
+        class="stack-color-option orange"
+        data-color="orange"
+        aria-label="Orange"
+    ></button>
+
+    <button
+        type="button"
+        class="stack-color-option green selected"
+        data-color="green"
+        aria-label="Green"
+    ></button>
+</div>
+        <div class="modal-actions">
+            <button id="stackCancelBtn">Cancel</button>
+            <button id="stackSaveBtn">Save</button>
+          </div>
+               </div>
+    </div>
+
+    <!-- Delete Stack Modal -->
+<div id="deleteStackModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2>Delete Stack?</h2>
+
+        <p id="deleteStackMessage"></p>
+
+        <div id="deleteStackWarning" class="delete-stack-warning" hidden>
+            <strong id="deleteStackWarningTitle"></strong>
+            <p>
+                Deleting this stack will also permanently delete
+                all habits inside it.
+            </p>
+        </div>
+
+        <p class="delete-stack-undo">
+            This action can't be undone.
+        </p>
+
+        <div class="modal-actions">
+            <button type="button" id="deleteStackCancelBtn">
+                Cancel
+            </button>
+
+            <button type="button" id="deleteStackConfirmBtn">
+                Delete Stack
+            </button>
+        </div>
+    </div>
+</div>
+
     <!-- Floating "add habit" button -->
+
     <button id="addHabitBtn" class="add-habit-btn" title="Add habit">+</button>
+   
+    <!-- Rename Stack Modal -->
+<div id="renameStackModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2>Rename Stack</h2>
+
+        <label for="renameStackInput">Stack name</label>
+        <input
+            type="text"
+            id="renameStackInput"
+            maxlength="100"
+            placeholder="Enter stack name"
+        >
+
+        <div class="modal-actions">
+            <button type="button" id="renameStackCancelBtn">
+                Cancel
+            </button>
+
+            <button type="button" id="renameStackSaveBtn">
+                Save
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Stack Color Modal -->
+<div id="changeStackColorModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2>Change Stack Color</h2>
+
+        <label>Stack color</label>
+
+        <div class="stack-color-picker" id="editStackColorPicker">
+            <button
+                type="button"
+                class="edit-stack-color-option stack-color-option cyan"
+                data-color="cyan"
+                aria-label="Cyan"
+            ></button>
+
+            <button
+                type="button"
+                class="edit-stack-color-option stack-color-option pink"
+                data-color="pink"
+                aria-label="Pink"
+            ></button>
+
+            <button
+                type="button"
+                class="edit-stack-color-option stack-color-option purple"
+                data-color="purple"
+                aria-label="Purple"
+            ></button>
+
+            <button
+                type="button"
+                class="edit-stack-color-option stack-color-option orange"
+                data-color="orange"
+                aria-label="Orange"
+            ></button>
+
+            <button
+                type="button"
+                class="edit-stack-color-option stack-color-option green"
+                data-color="green"
+                aria-label="Green"
+            ></button>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" id="changeStackColorCancelBtn">
+                Cancel
+            </button>
+
+            <button type="button" id="changeStackColorSaveBtn">
+                Save
+            </button>
+        </div>
+    </div>
+</div>
+
 
     <!-- "Input new habit" pop-up, per design guide -->
     <div id="habitModal" class="modal-overlay hidden">
@@ -43,17 +213,9 @@
             <label for="habitNameInput">Habit name</label>
             <input type="text" id="habitNameInput" placeholder="e.g. Brush teeth">
 
-            <label for="habitTimeInput">Stack</label>
-            <select id="habitTimeInput">
-                <option value="morning">Morning</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="evening">Evening</option>
-                <option value="night">Night</option>
-            </select>
-
-            <label for="parentHabitInput">Build on</label>
-            <select id="parentHabitInput">
-                <option value="">None - start a new stack</option>
+            <label for="habitStackInput">Stack</label>
+            <select id="habitStackInput">
+                <option value="">Choose a stack</option>
             </select>
 
             <label for="habitStatusInput">Status</label>
@@ -77,14 +239,11 @@
                 <label for="editHabitNameInput">Habit name</label>
                 <input type="text" id="editHabitNameInput">
     
-                <label for="editHabitTimeInput">Stack</label>
-                <select id="editHabitTimeInput">
-                    <option value="morning">Morning</option>
-                    <option value="afternoon">Afternoon</option>
-                    <option value="evening">Evening</option>
-                    <option value="night">Night</option>
+                <label for="editHabitStackInput">Stack</label>
+                <select id="editHabitStackInput">
+                     <option value="">Choose a stack</option>
                 </select>
-    
+
                 <label for="editHabitStatusInput">Status</label>
                 <select id="editHabitStatusInput">
                     <option value="working_on">Working On (new habit)</option>
@@ -101,7 +260,31 @@
                 <button id="deleteHabitBtn" class="delete-habit-btn">Delete Habit</button>
             </div>
         </div>
+        <!-- Delete Habit Modal -->
+<!-- Delete Habit Modal -->
+<div id="deleteHabitModal" class="modal-overlay hidden">
+    <div class="modal-box">
+        <h2>Delete Habit?</h2>
 
+        <div class="delete-stack-warning">
+            <strong id="deleteHabitMessage"></strong>
+        </div>
+
+        <p class="delete-stack-undo">
+            This action can't be undone.
+        </p>
+
+        <div class="modal-actions">
+            <button type="button" id="deleteHabitCancelBtn">
+                Cancel
+            </button>
+
+            <button type="button" id="deleteHabitConfirmBtn">
+                Delete Habit
+            </button>
+        </div>
+    </div>
+</div>
         <!-- Bottom navigation bar: Dashboard (this page) and Progress -->
     <nav class="bottom-nav" aria-label="Main">
         <a href="/dashboard" class="nav-tab active" aria-current="page">

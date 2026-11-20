@@ -43,43 +43,28 @@ async function createConnection() {
     });
 }
 
-// **Authorization Middleware: Verify JWT Token and Check User in Database**
-async function authenticateToken(req, res, next) {
+function authenticateToken(req, res, next) {
     const token = req.headers['authorization'];
 
     if (!token) {
-        return res.status(401).json({ message: 'Access denied. No token provided.' });
+        return res.status(401).json({
+            message: 'Access denied. No token provided.'
+        });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(403).json({ message: 'Invalid token.' });
+            return res.status(403).json({
+                message: 'Invalid token.'
+            });
         }
 
-        try {
-            const connection = await createConnection();
+        req.user = {
+            user_id: decoded.user_id,
+            username: decoded.username
+        };
 
-            // Query the database to verify that the userid is associated with an active account
-            const [rows] = await connection.execute(
-                'SELECT user_id, username FROM user WHERE username = ?',
-                [decoded.username]
-            );
-
-            await connection.end();  // Close connection
-
-            if (rows.length === 0) {
-                return res.status(403).json({ message: 'Account not found or deactivated.' });
-            }
-
-            req.user = {...
-                decoded,
-                user_id: rows[0].user_id
-          };  // Save the decoded username for use in the route
-            next();  // Proceed to the next middleware or route handler
-        } catch (dbError) {
-            console.error(dbError);
-            res.status(500).json({ message: 'Database error during authentication.' });
-        }
+        next();
     });
 }
 /////////////////////////////////////////////////
@@ -106,6 +91,24 @@ app.post('/api/create-account', async (req, res) => {
             'INSERT INTO user (username, password, firstname, lastname, birthday) VALUES (?, ?, ?, ?, ?)',
             [username, hashedPassword, firstname, lastname, birthday || null]
         );
+
+        const userId = result.insertId;
+
+    const defaultStacks = [
+        ['Morning', 1],
+        ['Afternoon', 2],
+        ['Evening', 3],
+        ['Night', 4]
+    ];
+
+for (const [stackName, sortOrder] of defaultStacks) {
+    await connection.execute(
+        `INSERT INTO habit_stack
+         (user_id, stack_name, sort_order)
+         VALUES (?, ?, ?)`,
+        [userId, stackName, sortOrder]
+    );
+}
 
         await connection.end();  // Close connection
 
@@ -279,7 +282,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
         // The token contains the username, so issue a new one
         // if it changed; otherwise the old token would stop working.
         const token = jwt.sign(
-            { username: newUsername },
+            { user_id: req.user.user_id, username: newUsername },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -360,10 +363,437 @@ app.patch('/api/users/me/preferences', authenticateToken, async (req, res) => {
     }
 });
 
+// Makes sure every user has the four original stacks and moves
+// older habits into the correct stack based on time of day.
+async function ensureDefaultStacks(connection, userId) {
+    const [existingStacks] = await connection.execute(
+        `SELECT stack_id, stack_name
+         FROM habit_stack
+         WHERE user_id = ?`,
+        [userId]
+    );
+
+    // If the user has no stacks yet, create the original four.
+    if (existingStacks.length === 0) {
+        const defaultStacks = [
+            ['Morning', 1],
+            ['Afternoon', 2],
+            ['Evening', 3],
+            ['Night', 4]
+        ];
+
+        for (const [name, order] of defaultStacks) {
+            await connection.execute(
+                `INSERT INTO habit_stack
+                 (user_id, stack_name, sort_order)
+                 VALUES (?, ?, ?)`,
+                [userId, name, order]
+            );
+        }
+    }
+
+    // Get the user's stacks again so we have their stack IDs.
+    const [stacks] = await connection.execute(
+        `SELECT stack_id, stack_name
+         FROM habit_stack
+         WHERE user_id = ?`,
+        [userId]
+    );
+
+    const stackByName = {};
+
+    stacks.forEach(stack => {
+        stackByName[stack.stack_name.toLowerCase()] = stack.stack_id;
+    });
+
+    // Move old habits with no stack into their matching original stack.
+    for (const time of ['morning', 'afternoon', 'evening', 'night']) {
+        const stackId = stackByName[time];
+
+        if (stackId) {
+            await connection.execute(
+                `UPDATE habit
+                 SET stack_id = ?
+                 WHERE user_id = ?
+                   AND stack_id IS NULL
+                   AND time_of_day = ?`,
+                [stackId, userId, time]
+            );
+        }
+    }
+}
+
+
+// ---------- HABIT STACKS ----------
+
+// Get all stacks for the logged-in user
+app.get('/api/stacks', authenticateToken, async (req, res) => {
+    try {
+        const connection = await createConnection();
+        
+        const [rows] = await connection.execute(
+            `SELECT stack_id, stack_name, sort_order,color
+             FROM habit_stack
+             WHERE user_id = ?
+             ORDER BY sort_order, stack_id`,
+            [req.user.user_id]
+        );
+
+        await connection.end();
+        res.status(200).json({ stacks: rows });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error retrieving stacks.' });
+    }
+});
+
+// Create a new stack
+app.post('/api/stacks', authenticateToken, async (req, res) => {
+    const stackName = String(req.body?.stack_name || '').trim();
+    const color = String(req.body?.color || 'green').toLowerCase();
+
+    const validColors = [
+        'cyan',
+        'pink',
+        'purple',
+        'orange',
+        'green'
+    ];
+
+    if (!stackName) {
+        return res.status(400).json({
+            message: 'Stack name is required.'
+        });
+    }
+
+    if (stackName.length > 100) {
+        return res.status(400).json({
+            message: 'Stack name is too long.'
+        });
+    }
+
+    if (!validColors.includes(color)) {
+        return res.status(400).json({
+            message: 'Please choose a valid stack color.'
+        });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        const [[max]] = await connection.execute(
+            `SELECT COALESCE(MAX(sort_order), 0) AS maxOrder
+             FROM habit_stack
+             WHERE user_id = ?`,
+            [req.user.user_id]
+        );
+
+        const [result] = await connection.execute(
+            `INSERT INTO habit_stack
+             (user_id, stack_name, sort_order, color)
+             VALUES (?, ?, ?, ?)`,
+            [
+                req.user.user_id,
+                stackName,
+                max.maxOrder + 1,
+                color
+            ]
+        );
+
+        const [rows] = await connection.execute(
+            `SELECT stack_id, stack_name, sort_order, color
+             FROM habit_stack
+             WHERE stack_id = ?`,
+            [result.insertId]
+        );
+
+        await connection.end();
+
+        res.status(201).json({
+            stack: rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: 'Error creating stack.'
+        });
+    }
+});
+
+
+// Rename a stack
+app.patch('/api/stacks/:id', authenticateToken, async (req, res) => {
+    const stackId = Number(req.params.id);
+    const stackName = String(req.body?.stack_name || '').trim();
+
+    if (!Number.isInteger(stackId)) {
+        return res.status(400).json({ message: 'Invalid stack id.' });
+    }
+
+    if (!stackName) {
+        return res.status(400).json({ message: 'Stack name is required.' });
+    }
+
+    if (stackName.length > 100) {
+        return res.status(400).json({ message: 'Stack name is too long.' });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        const [result] = await connection.execute(
+            'UPDATE habit_stack SET stack_name = ? WHERE stack_id = ? AND user_id = ?',
+            [stackName, stackId, req.user.user_id]
+        );
+
+        if (result.affectedRows === 0) {
+            await connection.end();
+            return res.status(404).json({ message: 'Stack not found.' });
+        }
+
+        await connection.end();
+
+        res.status(200).json({
+            stack: {
+                stack_id: stackId,
+                stack_name: stackName
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error renaming stack.' });
+    }
+});
+
+// Change a stack's color
+app.patch('/api/stacks/:stackId/color', authenticateToken, async (req, res) => {
+    const stackId = Number(req.params.stackId);
+    const color = String(req.body?.color || '').toLowerCase();
+
+    const validColors = [
+        'cyan',
+        'pink',
+        'purple',
+        'orange',
+        'green'
+    ];
+
+    if (!Number.isInteger(stackId) || stackId <= 0) {
+        return res.status(400).json({
+            message: 'Invalid stack.'
+        });
+    }
+
+    if (!validColors.includes(color)) {
+        return res.status(400).json({
+            message: 'Please choose a valid stack color.'
+        });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        const [result] = await connection.execute(
+            `UPDATE habit_stack
+             SET color = ?
+             WHERE stack_id = ? AND user_id = ?`,
+            [
+                color,
+                stackId,
+                req.user.user_id
+            ]
+        );
+
+        if (result.affectedRows === 0) {
+            await connection.end();
+
+            return res.status(404).json({
+                message: 'Stack not found.'
+            });
+        }
+
+        const [rows] = await connection.execute(
+            `SELECT stack_id, stack_name, sort_order, color
+             FROM habit_stack
+             WHERE stack_id = ? AND user_id = ?`,
+            [
+                stackId,
+                req.user.user_id
+            ]
+        );
+
+        await connection.end();
+
+        res.json({
+            stack: rows[0]
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: 'Error changing stack color.'
+        });
+    }
+});
+
+
+// Reorder stacks
+app.put('/api/stacks/reorder', authenticateToken, async (req, res) => {
+    const { ids } = req.body || {};
+
+    if (
+        !Array.isArray(ids) ||
+        ids.length === 0 ||
+        !ids.every(Number.isInteger) ||
+        new Set(ids).size !== ids.length
+    ) {
+        return res.status(400).json({
+            message: 'A list of stack ids is required.'
+        });
+    }
+
+    let connection;
+
+    try {
+        connection = await createConnection();
+
+        // Make sure every stack belongs to the logged-in user
+        const [rows] = await connection.execute(
+            `SELECT stack_id
+             FROM habit_stack
+             WHERE user_id = ?
+             ORDER BY sort_order, stack_id`,
+            [req.user.user_id]
+        );
+
+        if (rows.length !== ids.length) {
+            return res.status(400).json({
+                message: 'Send every stack in the new order.'
+            });
+        }
+
+        const ownedIds = new Set(
+            rows.map(row => row.stack_id)
+        );
+
+        if (ids.some(id => !ownedIds.has(id))) {
+            return res.status(403).json({
+                message: 'Invalid stack.'
+            });
+        }
+
+        await connection.beginTransaction();
+
+        // Give each stack its new position
+        for (let i = 0; i < ids.length; i++) {
+            await connection.execute(
+                `UPDATE habit_stack
+                 SET sort_order = ?
+                 WHERE stack_id = ? AND user_id = ?`,
+                [i + 1, ids[i], req.user.user_id]
+            );
+        }
+
+        await connection.commit();
+
+        res.status(200).json({
+            message: 'Stack order saved.'
+        });
+
+    } catch (error) {
+        if (connection) {
+            await connection.rollback().catch(() => {});
+        }
+
+        console.error(error);
+
+        res.status(500).json({
+            message: 'Error saving stack order.'
+        });
+
+    } finally {
+        if (connection) {
+            await connection.end().catch(() => {});
+        }
+    }
+});
+// Delete a stack and all habits inside it
+app.delete('/api/stacks/:id', authenticateToken, async (req, res) => {
+    const stackId = Number(req.params.id);
+
+    if (!Number.isInteger(stackId)) {
+        return res.status(400).json({ message: 'Invalid stack id.' });
+    }
+
+    let connection;
+
+    try {
+        connection = await createConnection();
+
+        // Make sure this stack belongs to the logged-in user
+        const [stackRows] = await connection.execute(
+            'SELECT stack_id FROM habit_stack WHERE stack_id = ? AND user_id = ?',
+            [stackId, req.user.user_id]
+        );
+
+        if (stackRows.length === 0) {
+            return res.status(404).json({ message: 'Stack not found.' });
+        }
+
+        await connection.beginTransaction();
+
+        // Delete check history for habits inside this stack
+        await connection.execute(
+            `DELETE hc
+             FROM habit_check hc
+             JOIN habit h ON hc.habit_id = h.habit_id
+             WHERE h.stack_id = ?
+               AND h.user_id = ?`,
+            [stackId, req.user.user_id]
+        );
+
+        // Delete all habits inside the stack
+        const [habitResult] = await connection.execute(
+            'DELETE FROM habit WHERE stack_id = ? AND user_id = ?',
+            [stackId, req.user.user_id]
+        );
+
+        // Delete the stack itself
+        await connection.execute(
+            'DELETE FROM habit_stack WHERE stack_id = ? AND user_id = ?',
+            [stackId, req.user.user_id]
+        );
+
+        await connection.commit();
+
+        res.status(200).json({
+            message: 'Stack and habits deleted.',
+            deletedHabits: habitResult.affectedRows
+        });
+
+    } catch (error) {
+        if (connection) {
+            await connection.rollback().catch(() => {});
+        }
+
+        console.error(error);
+        res.status(500).json({
+            message: 'Error deleting stack.'
+        });
+
+    } finally {
+        if (connection) {
+            await connection.end().catch(() => {});
+        }
+    }
+});
+
 // ---------- HABITS ----------
-const HABIT_TIMES = ['morning', 'afternoon', 'evening', 'night'];
 const HABIT_STATUSES = ['working_on', 'current'];
-const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, time_of_day AS time, status, streak, sort_order, parent_habit_id';
+const HABIT_COLUMNS = 'habit_id AS id, habit_name AS name, status, streak, sort_order, stack_id';
 // ---------- STREAKS ----------
 function isValidDate(str) {
     if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -394,63 +824,51 @@ function calculateStreak(checkedDates, today) {
     }
     return streak;
 }
-// Returns habits that should shake based on the Build on relationship.
-async function getSkippedHabitIds(connection, userId, habit, date) {
-    const shakeIds = [];
+// Checks the habit information sent from the add and edit forms.
+function validateHabit(body) {
+    const { name, status, stack_id } = body || {};
 
-    // If the clicked habit has an unchecked parent, shake the parent.
-    if (habit.parent_habit_id) {
-        const [parentRows] = await connection.execute(
-            `SELECT h.habit_id
-             FROM habit h
-             LEFT JOIN habit_check c
-               ON c.habit_id = h.habit_id
-              AND c.check_date = ?
-             WHERE h.habit_id = ?
-               AND h.user_id = ?
-               AND c.habit_id IS NULL`,
-            [date, habit.parent_habit_id, userId]
-        );
-
-        parentRows.forEach(row => shakeIds.push(row.habit_id));
+    if (typeof name !== 'string' || name.trim().length === 0) {
+        return { error: 'Habit name is required.' };
     }
 
-    // If the clicked habit has an unchecked child, shake the child.
-    const [childRows] = await connection.execute(
+    if (name.trim().length > 255) {
+        return { error: 'Habit name is too long.' };
+    }
+
+    if (!HABIT_STATUSES.includes(status)) {
+        return { error: 'Please choose a valid status.' };
+    }
+
+    const stackId = Number(stack_id);
+
+    if (!Number.isInteger(stackId)) {
+        return { error: 'Please choose a stack.' };
+    }
+
+    return {
+        name: name.trim(),
+        status,
+        stack_id: stackId
+    };
+}
+// Returns the other unchecked habits in the same custom stack.
+async function getUncheckedStackHabitIds(connection, userId, stackId, checkedHabitId, date) {
+    const [rows] = await connection.execute(
         `SELECT h.habit_id
          FROM habit h
          LEFT JOIN habit_check c
            ON c.habit_id = h.habit_id
           AND c.check_date = ?
-         WHERE h.parent_habit_id = ?
-           AND h.user_id = ?
-           AND c.habit_id IS NULL`,
-        [date, habit.habit_id, userId]
+         WHERE h.user_id = ?
+           AND h.stack_id = ?
+           AND h.habit_id <> ?
+           AND c.habit_id IS NULL
+         ORDER BY h.sort_order, h.habit_id`,
+        [date, userId, stackId, checkedHabitId]
     );
 
-    childRows.forEach(row => shakeIds.push(row.habit_id));
-
-    return shakeIds;
-}
-
-
-// Checks the name / stack / status sent from the add and edit forms.
-// Returns { error } or { name, time, status }.
-function validateHabit(body) {
-    const { name, time, status, parent_habit_id } = body || {};
-    if (typeof name !== 'string' || name.trim().length === 0) {
-        return { error: 'Habit name is required.' };
-    }
-    if (name.trim().length > 255) {
-        return { error: 'Habit name is too long.' };
-    }
-    if (!HABIT_TIMES.includes(time)) {
-        return { error: 'Please choose a valid stack.' };
-    }
-    if (!HABIT_STATUSES.includes(status)) {
-        return { error: 'Please choose a valid status.' };
-    }
-    return { name: name.trim(), time, status, parent_habit_id: parent_habit_id || null };
+    return rows.map(row => row.habit_id);
 }
 
 // Route: Get the logged-in user's habits (in stack order).
@@ -521,7 +939,7 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
 
         // Only the owner can check a habit
         const [existing] = await connection.execute(
-            'SELECT habit_id, status, streak, time_of_day, sort_order, parent_habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
+            'SELECT habit_id, status, streak, time_of_day, sort_order, stack_id FROM habit WHERE habit_id = ? AND user_id = ?',
             [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
@@ -570,94 +988,148 @@ app.put('/api/habits/:id/check', authenticateToken, async (req, res) => {
             [streak, status, habitId]
         );
 
-        // When a habit is checked, any habit above it in the SAME stack that
-        // is still unchecked for that day was skipped. Send back their ids
-        // so the page can shake those rows (not the one just checked).
-        let skippedIds = [];
-        if (checked) {
-            skippedIds = await getSkippedHabitIds(connection, req.user.user_id, existing[0], date);
-        }
-        await connection.end();
 
-        res.status(200).json({
-            completed: checked,
-            streak,
-            status,
-            graduated,
-            skipped: skippedIds.length > 0,
-            skippedIds
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error saving check.' });
+     let skippedIds = [];
+
+if (checked && existing[0].stack_id) {
+    skippedIds = await getUncheckedStackHabitIds(
+        connection,
+        req.user.user_id,
+        existing[0].stack_id,
+        habitId,
+        date
+    );
+}
+
+await connection.end();
+
+res.status(200).json({
+    completed: checked,
+    streak,
+    status,
+    graduated,
+    skippedIds
+}); 
+        
+
+   } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error saving check.' });
     }
-});
+    });
 
-// Route: Progress data for one habit's line graph.
-// Query: ?today=YYYY-MM-DD&days=7 (7, 30, 90 or 180). Sends back one point
-// for every day, ending today: value is 100 if the habit was checked that
-// day and 0 if not. So a habit that is newer than the time range just sits
-// at 0 until the first day it was checked.
-const PROGRESS_RANGES = [7, 30, 90, 180];
 
-app.get('/api/habits/:id/progress', authenticateToken, async (req, res) => {
+// Route: Edit a habit. If it is moved to a different stack, it is put
+// at the end of the list so it lands at the bottom of its new stack.
+app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
     const habitId = Number(req.params.id);
-    const days = Number(req.query.days);
-    const today = req.query.today;
 
     if (!Number.isInteger(habitId)) {
-        return res.status(400).json({ message: 'Invalid habit id.' });
+        return res.status(400).json({
+            message: 'Invalid habit id.'
+        });
     }
-    if (!PROGRESS_RANGES.includes(days)) {
-        return res.status(400).json({ message: 'Please choose a valid time range.' });
-    }
-    if (!isValidDate(today)) {
-        return res.status(400).json({ message: 'A valid date is required.' });
+
+    const habit = validateHabit(req.body);
+
+    if (habit.error) {
+        return res.status(400).json({
+            message: habit.error
+        });
     }
 
     try {
         const connection = await createConnection();
 
-        // Only the owner can see a habit's progress
+        // Make sure the habit belongs to this user
         const [existing] = await connection.execute(
-            'SELECT habit_id, habit_name FROM habit WHERE habit_id = ? AND user_id = ?',
+            `SELECT stack_id, sort_order
+             FROM habit
+             WHERE habit_id = ? AND user_id = ?`,
             [habitId, req.user.user_id]
         );
+
         if (existing.length === 0) {
             await connection.end();
-            return res.status(404).json({ message: 'Habit not found.' });
+
+            return res.status(404).json({
+                message: 'Habit not found.'
+            });
         }
 
-        const startDate = shiftDate(today, -(days - 1));
-        const [checks] = await connection.execute(
-            `SELECT DATE_FORMAT(check_date, '%Y-%m-%d') AS check_date
-             FROM habit_check
-             WHERE habit_id = ? AND check_date BETWEEN ? AND ?`,
-            [habitId, startDate, today]
+        // Make sure the selected stack belongs to this user
+        const [stackRows] = await connection.execute(
+            `SELECT stack_id
+             FROM habit_stack
+             WHERE stack_id = ? AND user_id = ?`,
+            [habit.stack_id, req.user.user_id]
         );
+
+        if (stackRows.length === 0) {
+            await connection.end();
+
+            return res.status(400).json({
+                message: 'Invalid stack.'
+            });
+        }
+
+        let sortOrder = existing[0].sort_order;
+
+        // If the habit moves stacks, place it at the end
+        if (existing[0].stack_id !== habit.stack_id) {
+            const [[max]] = await connection.execute(
+                `SELECT COALESCE(MAX(sort_order), 0) AS maxOrder
+                 FROM habit
+                 WHERE user_id = ?`,
+                [req.user.user_id]
+            );
+
+            sortOrder = max.maxOrder + 1;
+        }
+
+        await connection.execute(
+            `UPDATE habit
+             SET habit_name = ?,
+                 status = ?,
+                 sort_order = ?,
+                 stack_id = ?
+             WHERE habit_id = ? AND user_id = ?`,
+            [
+                habit.name,
+                habit.status,
+                sortOrder,
+                habit.stack_id,
+                habitId,
+                req.user.user_id
+            ]
+        );
+
+        const [rows] = await connection.execute(
+            `SELECT ${HABIT_COLUMNS}
+             FROM habit
+             WHERE habit_id = ?`,
+            [habitId]
+        );
+
         await connection.end();
 
-        const checkedDates = new Set(checks.map(c => c.check_date));
-        const points = [];
-        for (let i = 0; i < days; i++) {
-            const date = shiftDate(startDate, i);
-            points.push({ date, value: checkedDates.has(date) ? 100 : 0 });
-        }
-
         res.status(200).json({
-            habit: { id: existing[0].habit_id, name: existing[0].habit_name },
-            days,
-            points
+            habit: rows[0]
         });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error retrieving progress.' });
+
+        res.status(500).json({
+            message: 'Error updating habit.'
+        });
     }
 });
 
 // Route: Add a habit (goes to the end of its stack)
 app.post('/api/habits', authenticateToken, async (req, res) => {
     const habit = validateHabit(req.body);
+
     if (habit.error) {
         return res.status(400).json({ message: habit.error });
     }
@@ -665,40 +1137,60 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
     try {
         const connection = await createConnection();
 
-        if(habit.parent_habit_id) {
-            const [parentRows] = await connection.execute(
-                'SELECT habit_id FROM habit WHERE habit_id = ? AND user_id = ?',
-                [habit.parent_habit_id, req.user.user_id]
-            );
+        // Make sure the selected stack belongs to this user
+        const [stackRows] = await connection.execute(
+            'SELECT stack_id FROM habit_stack WHERE stack_id = ? AND user_id = ?',
+            [habit.stack_id, req.user.user_id]
+        );
 
-            if (parentRows.length === 0) {
-                await connection.end();
-                return res.status(400).json({ message: 'Invalid parent habit.'});
-            }
+        if (stackRows.length === 0) {
+            await connection.end();
+            return res.status(400).json({
+                message: 'Invalid stack.'
+            });
         }
 
+        // Put the new habit at the end
         const [[max]] = await connection.execute(
             'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE user_id = ?',
             [req.user.user_id]
         );
 
         const [result] = await connection.execute(
-            'INSERT INTO habit (user_id, habit_name, time_of_day, status, sort_order, parent_habit_id) VALUES (?,?, ?, ?, ?, ?)',
-            [req.user.user_id, habit.name, habit.time, habit.status, max.maxOrder + 1, habit.parent_habit_id || null]
+            `INSERT INTO habit
+             (user_id, habit_name, status, sort_order, stack_id)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+                req.user.user_id,
+                habit.name,
+                habit.status,
+                max.maxOrder + 1,
+                habit.stack_id
+            ]
         );
 
         const [rows] = await connection.execute(
-            `SELECT ${HABIT_COLUMNS} FROM habit WHERE habit_id = ?`,
+            `SELECT ${HABIT_COLUMNS}
+             FROM habit
+             WHERE habit_id = ?`,
             [result.insertId]
         );
+
         await connection.end();
 
-        res.status(201).json({ habit: rows[0] });
+        res.status(201).json({
+            habit: rows[0]
+        });
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Error adding habit.' });
+
+        res.status(500).json({
+            message: 'Error adding habit.'
+        });
     }
 });
+
 
 // Route: Edit a habit. If it is moved to a different stack, it is put
 // at the end of the list so it lands at the bottom of its new stack.
@@ -718,16 +1210,24 @@ app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
 
         // Only the owner can edit a habit
         const [existing] = await connection.execute(
-            'SELECT time_of_day, sort_order FROM habit WHERE habit_id = ? AND user_id = ?',
+            'SELECT stack_id, sort_order FROM habit WHERE habit_id = ? AND user_id = ?',
             [habitId, req.user.user_id]
         );
         if (existing.length === 0) {
             await connection.end();
             return res.status(404).json({ message: 'Habit not found.' });
         }
+        const [stackRows] = await connection.execute(
+            'SELECT stack_id FROM habit_stack WHERE stack_id = ? AND user_id = ?',
+         [habit.stack_id, req.user.user_id]
+            );
 
+        if (stackRows.length === 0) {
+         await connection.end();
+         return res.status(400).json({ message: 'Invalid stack.' });
+        }
         let sortOrder = existing[0].sort_order;
-        if (existing[0].time_of_day !== habit.time) {
+        if (existing[0].stack_id !== habit.stack_id) {
             const [[max]] = await connection.execute(
                 'SELECT COALESCE(MAX(sort_order), 0) AS maxOrder FROM habit WHERE user_id = ?',
                 [req.user.user_id]
@@ -736,8 +1236,8 @@ app.patch('/api/habits/:id', authenticateToken, async (req, res) => {
         }
 
         await connection.execute(
-            'UPDATE habit SET habit_name = ?, time_of_day = ?, status = ?, sort_order = ? WHERE habit_id = ? AND user_id = ?',
-            [habit.name, habit.time, habit.status, sortOrder, habitId, req.user.user_id]
+            'UPDATE habit SET habit_name = ?, time_of_day = ?, status = ?, sort_order = ?, stack_id = ? WHERE habit_id = ? AND user_id = ?',
+            [habit.name, habit.time, habit.status, sortOrder, habit.stack_id, habitId, req.user.user_id]
         );
 
         const [rows] = await connection.execute(
@@ -771,7 +1271,7 @@ app.put('/api/habits/reorder', authenticateToken, async (req, res) => {
 
         // Every id must belong to this user
         const [rows] = await connection.execute(
-            `SELECT habit_id, time_of_day, sort_order FROM habit
+            `SELECT habit_id, stack_id, sort_order FROM habit
              WHERE user_id = ? AND habit_id IN (${ids.map(() => '?').join(',')})`,
             [req.user.user_id, ...ids]
         );
@@ -780,14 +1280,14 @@ app.put('/api/habits/reorder', authenticateToken, async (req, res) => {
         }
 
         // ...and all be in the same stack
-        const stack = rows[0].time_of_day;
-        if (rows.some(r => r.time_of_day !== stack)) {
+        const stack = rows[0].stack_id;
+        if (rows.some(r => r.stack_id !== stack)) {
             return res.status(400).json({ message: 'Habits must all be in the same stack.' });
         }
 
         // ...and be the whole stack, so every habit in it gets a new order
         const [[count]] = await connection.execute(
-            'SELECT COUNT(*) AS total FROM habit WHERE user_id = ? AND time_of_day = ?',
+            'SELECT COUNT(*) AS total FROM habit WHERE user_id = ? AND stack_id = ?',
             [req.user.user_id, stack]
         );
         if (Number(count.total) !== ids.length) {
