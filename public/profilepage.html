@@ -140,6 +140,15 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+
+                
+                <div class="notification-row browser-permission-row">
+                    <span id="browserNotifStatus" class="notification-text" role="status"></span>
+                    <span class="browser-notif-actions">
+                        <button type="button" id="browserNotifButton" class="hs-notif-btn" hidden>Turn on</button>
+                        <button type="button" id="browserNotifTestButton" class="hs-notif-btn" hidden>Send test</button>
+                    </span>
+                </div>
             </fieldset>
 
             <p id="preferencesError" role="alert" hidden></p>
@@ -157,6 +166,7 @@
     </dialog>
     
     <script src="/js/datamodel.js"></script>
+    <script src="/js/notifications.js"></script>
     <script src="/js/profile.js"></script>
     <script src="/js/theme.js"></script>
 </body>
