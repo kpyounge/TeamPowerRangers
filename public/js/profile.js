@@ -51,6 +51,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const preferencesForm = document.getElementById("preferencesForm");
     const graduationSelect = document.getElementById("graduationSelect");
     const preferencesError = document.getElementById("preferencesError");
+    const notifyStreakLoss = document.getElementById("notifyStreakLoss");
+    const notifyLogReminder = document.getElementById("notifyLogReminder");
+    const notifyMissedHabit = document.getElementById("notifyMissedHabit");
     const cancelPreferencesButton = document.getElementById("cancelPreferencesButton");
     const savePreferencesButton = document.getElementById("savePreferencesButton");
 
@@ -227,6 +230,10 @@ const highestStreak = habits.length
         if (!currentUser) return;
 
         graduationSelect.value = String(currentUser.graduation_days ?? 30);
+        // Notifications are on unless the user has turned them off
+        notifyStreakLoss.checked = Boolean(currentUser.notify_streak_loss ?? true);
+        notifyLogReminder.checked = Boolean(currentUser.notify_log_reminder ?? true);
+        notifyMissedHabit.checked = Boolean(currentUser.notify_missed_habit ?? true);
         preferencesError.hidden = true;
         preferencesDialog.showModal();
     });
@@ -241,7 +248,10 @@ const highestStreak = habits.length
         savePreferencesButton.disabled = true;
 
         const result = await DataModel.updatePreferences({
-            graduation_days: Number(graduationSelect.value)
+            graduation_days: Number(graduationSelect.value),
+            notify_streak_loss: notifyStreakLoss.checked,
+            notify_log_reminder: notifyLogReminder.checked,
+            notify_missed_habit: notifyMissedHabit.checked
         });
 
         savePreferencesButton.disabled = false;
@@ -253,7 +263,7 @@ const highestStreak = habits.length
         }
 
         // Only remember the new value after the server confirms the save
-        currentUser.graduation_days = result.data.graduation_days;
+        Object.assign(currentUser, result.data);
         preferencesDialog.close();
     });
 

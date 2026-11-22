@@ -105,6 +105,43 @@
                 In-progress habits become existing habits when their streak reaches this length.
             </p>
 
+            <fieldset class="notifications-section">
+                <legend>Notifications</legend>
+
+                <div class="notification-row">
+                    <span id="notifyStreakLossLabel" class="notification-text">
+                        Notify me when I am about to lose a streak
+                    </span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="notifyStreakLoss" name="notify_streak_loss"
+                               aria-labelledby="notifyStreakLossLabel">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="notification-row">
+                    <span id="notifyLogReminderLabel" class="notification-text">
+                        Notify me to remember to log habits
+                    </span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="notifyLogReminder" name="notify_log_reminder"
+                               aria-labelledby="notifyLogReminderLabel">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="notification-row">
+                    <span id="notifyMissedHabitLabel" class="notification-text">
+                        Notify me when I missed a habit in a stack
+                    </span>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="notifyMissedHabit" name="notify_missed_habit"
+                               aria-labelledby="notifyMissedHabitLabel">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </fieldset>
+
             <p id="preferencesError" role="alert" hidden></p>
 
             <div class="dialog-actions">

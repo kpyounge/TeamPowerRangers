@@ -230,7 +230,7 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
         const connection = await createConnection();
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days, notify_streak_loss, notify_log_reminder, notify_missed_habit FROM user WHERE username = ?',
             [req.user.username]
         );
 
@@ -273,7 +273,7 @@ app.patch('/api/users/me', authenticateToken, async (req, res) => {
   
 
         const [rows] = await connection.execute(
-            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days FROM user WHERE username = ?',
+            'SELECT username, firstname, lastname, birthday, theme, created_at, profile_picture, tutorial_status, graduation_days, notify_streak_loss, notify_log_reminder, notify_missed_habit FROM user WHERE username = ?',
             [newUsername]
         );
 
@@ -337,26 +337,65 @@ app.patch('/api/users/me/tutorial', authenticateToken, async (req, res) => {
     }
 });
 
-// Route: Save the user's preferences. For now that is the graduation
-// length: how many days of streak an in-progress habit needs before it
-// becomes an existing habit. 0 means "no graduation".
+// Route: Save the user's preferences. Send any of these (at least one):
+//   graduation_days      - 0 (no graduation), 10, 20, 30, 60 or 90: how many
+//                          days of streak an in-progress habit needs to become
+//                          an existing habit
+//   notify_streak_loss, notify_log_reminder, notify_missed_habit
+//                        - true or false: which notifications the user wants
 const GRADUATION_OPTIONS = [0, 10, 20, 30, 60, 90];
+const NOTIFICATION_FIELDS = ['notify_streak_loss', 'notify_log_reminder', 'notify_missed_habit'];
 
 app.patch('/api/users/me/preferences', authenticateToken, async (req, res) => {
-    const { graduation_days } = req.body || {};
-    if (!GRADUATION_OPTIONS.includes(graduation_days)) {
-        return res.status(400).json({ message: 'Please choose a valid graduation length.' });
+    const body = req.body || {};
+    const columns = [];
+    const values = [];
+
+    if (body.graduation_days !== undefined) {
+        if (!GRADUATION_OPTIONS.includes(body.graduation_days)) {
+            return res.status(400).json({ message: 'Please choose a valid graduation length.' });
+        }
+        columns.push('graduation_days = ?');
+        values.push(body.graduation_days);
+    }
+
+    // Column names come from the fixed list above, never from the request
+    for (const field of NOTIFICATION_FIELDS) {
+        if (body[field] !== undefined) {
+            if (typeof body[field] !== 'boolean') {
+                return res.status(400).json({ message: 'Notification settings must be on or off.' });
+            }
+            columns.push(`${field} = ?`);
+            values.push(body[field] ? 1 : 0);
+        }
+    }
+
+    if (columns.length === 0) {
+        return res.status(400).json({ message: 'No preferences to save.' });
     }
 
     try {
         const connection = await createConnection();
+
         await connection.execute(
-            'UPDATE user SET graduation_days = ? WHERE user_id = ?',
-            [graduation_days, req.user.user_id]
+            `UPDATE user SET ${columns.join(', ')} WHERE user_id = ?`,
+            [...values, req.user.user_id]
         );
+
+        const [rows] = await connection.execute(
+            'SELECT graduation_days, notify_streak_loss, notify_log_reminder, notify_missed_habit FROM user WHERE user_id = ?',
+            [req.user.user_id]
+        );
+
         await connection.end();
 
-        res.status(200).json({ graduation_days });
+        const saved = rows[0];
+        res.status(200).json({
+            graduation_days: saved.graduation_days,
+            notify_streak_loss: Boolean(saved.notify_streak_loss),
+            notify_log_reminder: Boolean(saved.notify_log_reminder),
+            notify_missed_habit: Boolean(saved.notify_missed_habit)
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error saving preferences.' });
