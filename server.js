@@ -95,18 +95,18 @@ app.post('/api/create-account', async (req, res) => {
         const userId = result.insertId;
 
     const defaultStacks = [
-        ['Morning', 1],
-        ['Afternoon', 2],
-        ['Evening', 3],
-        ['Night', 4]
-    ];
+    ['Morning', 1, 'cyan'],
+    ['Afternoon', 2, 'pink'],
+    ['Evening', 3, 'purple'],
+    ['Night', 4, 'orange']
+];
 
-for (const [stackName, sortOrder] of defaultStacks) {
+for (const [stackName, sortOrder, color] of defaultStacks) {
     await connection.execute(
         `INSERT INTO habit_stack
-         (user_id, stack_name, sort_order)
-         VALUES (?, ?, ?)`,
-        [userId, stackName, sortOrder]
+         (user_id, stack_name, sort_order, color)
+         VALUES (?, ?, ?, ?)`,
+        [userId, stackName, sortOrder, color]
     );
 }
 
@@ -1056,7 +1056,93 @@ res.status(200).json({
     res.status(500).json({ message: 'Error saving check.' });
     }
     });
+// Route: Get one habit's progress history
+app.get('/api/habits/:id/progress', authenticateToken, async (req, res) => {
+    const habitId = Number(req.params.id);
+    const today = req.query.today;
+    const days = Number(req.query.days);
 
+    const validDays = [7, 30, 90, 180];
+
+    if (!Number.isInteger(habitId)) {
+        return res.status(400).json({
+            message: 'Invalid habit id.'
+        });
+    }
+
+    if (!isValidDate(today)) {
+        return res.status(400).json({
+            message: 'A valid date is required.'
+        });
+    }
+
+    if (!validDays.includes(days)) {
+        return res.status(400).json({
+            message: 'Invalid progress range.'
+        });
+    }
+
+    try {
+        const connection = await createConnection();
+
+        // Make sure this habit belongs to the logged-in user
+        const [habitRows] = await connection.execute(
+            `SELECT habit_id
+             FROM habit
+             WHERE habit_id = ? AND user_id = ?`,
+            [habitId, req.user.user_id]
+        );
+
+        if (habitRows.length === 0) {
+            await connection.end();
+
+            return res.status(404).json({
+                message: 'Habit not found.'
+            });
+        }
+
+        const startDate = shiftDate(today, -(days - 1));
+
+        const [checks] = await connection.execute(
+            `SELECT DATE_FORMAT(check_date, '%Y-%m-%d') AS check_date
+             FROM habit_check
+             WHERE habit_id = ?
+               AND check_date BETWEEN ? AND ?
+             ORDER BY check_date`,
+            [habitId, startDate, today]
+        );
+
+        await connection.end();
+
+        const checkedDates = new Set(
+            checks.map(check => check.check_date)
+        );
+
+        const points = [];
+
+    for (let i = 0; i < days; i++) {
+    const date = shiftDate(startDate, i);
+
+    points.push({
+        date: date,
+        value: checkedDates.has(date) ? 100 : 0
+    });
+    }
+
+res.status(200).json({
+    habit_id: habitId,
+    days: days,
+    points: points
+});
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: 'Error retrieving habit progress.'
+        });
+    }
+});
 
 // Route: Edit a habit. If it is moved to a different stack, it is put
 // at the end of the list so it lands at the bottom of its new stack.

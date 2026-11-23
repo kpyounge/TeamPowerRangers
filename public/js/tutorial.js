@@ -42,14 +42,14 @@ const TUTORIAL_STEPS = [
 // The congratulation pop-up shown after the first two-habit stack
 const FIRST_STACK_POPUP = {
     title: 'Yay!',
-    text: "You've added your first stack! Good luck on your habit stacking journey!",
+    text: "You've added your first habit and created your first stack! Good luck on your habit stacking journey!!",
     avatar: '/images/tutorial-2.png',
     buttonLabel: "Let's go!"
 };
 
 const STACK_CUSTOMIZE_PROMPT = {
     title: 'Make your stacks yours!',
-    text: 'Great! Your dashboard starts with Morning, Afternoon, Evening, and Night. You can rename any stack using the three dots, or tap "+ Stack" to create more.',
+    text: 'Great! Your dashboard starts with Morning, Afternoon, Evening, and Night. Tap "+ Stack" to create your own stack and choose its color. You can also drag stacks to reorder them or use the three dots to rename, change the color, or delete a stack.',
     avatar: '/images/tutorial-3.png'
 };
 
@@ -62,10 +62,34 @@ let firstStackOverlay = null;
 function setTutorialInert(isInert) {
     ['.theme-toggle-row', '.container', '#addHabitBtn'].forEach(selector => {
         const element = document.querySelector(selector);
+
         if (element) {
             element.inert = isInert;
         }
     });
+}
+
+function setStackCustomizeInert(isInert) {
+    const addHabitBtn = document.getElementById('addHabitBtn');
+    const stacksContainer = document.getElementById('stacksContainer');
+    const profileLink = document.querySelector('.header-links a');
+    const logoutButton = document.getElementById('logoutButton');
+
+    if (addHabitBtn) {
+        addHabitBtn.inert = isInert;
+    }
+
+    if (stacksContainer) {
+        stacksContainer.inert = isInert;
+    }
+
+    if (profileLink) {
+        profileLink.inert = isInert;
+    }
+
+    if (logoutButton) {
+        logoutButton.inert = isInert;
+    }
 }
 
 // Builds one chat message: avatar on the left, speech bubble on the right.
@@ -185,10 +209,10 @@ function showStackCustomizePrompt() {
 
     tutorialActive = true;
     document.body.classList.add('tutorial-active');
-    setTutorialInert(true);
+    setStackCustomizeInert(true);
 
     tutorialOverlay = document.createElement('div');
-    tutorialOverlay.className = 'tutorial-overlay pointing';
+    tutorialOverlay.className = 'tutorial-overlay stack-customize-overlay';
     document.body.appendChild(tutorialOverlay);
 
     const addStackBtn = document.getElementById('addStackBtn');
@@ -207,9 +231,9 @@ function showStackCustomizePrompt() {
     );
 
     addStackBtn.inert = false;
-    addStackBtn.classList.add('tutorial-highlight');
+    addStackBtn.classList.add('stack-customize-highlight');
     addStackBtn.focus();
-}
+    }
 function endStackCustomizePrompt() {
     if (tutorialOverlay) {
         tutorialOverlay.remove();
@@ -218,10 +242,10 @@ function endStackCustomizePrompt() {
 
     tutorialActive = false;
     document.body.classList.remove('tutorial-active');
-    setTutorialInert(false);
+    setStackCustomizeInert(false);
 
     const addStackBtn = document.getElementById('addStackBtn');
-    addStackBtn.classList.remove('tutorial-highlight');
+    addStackBtn.classList.remove('stack-customize-highlight');
 }
 
 

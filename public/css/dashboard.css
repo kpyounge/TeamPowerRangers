@@ -930,6 +930,18 @@ body.tutorial-active .modal-overlay {
     border-top-color: var(--color-purple);
 }
 
+/* Center the stack customization tutorial */
+.stack-customize-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.stack-customize-overlay .tutorial-card {
+    position: static;
+    pointer-events: auto;
+}
 /* ---------- Highlight the "+" button so it stands out above the overlay ---------- */
 .add-habit-btn.tutorial-highlight {
     z-index: 1001;
@@ -1125,4 +1137,27 @@ body.tutorial-active .modal-overlay {
 
 .habit-row.shake {
     animation: habitShake 0.5s ease-in-out;
+}
+
+.stack-customize-highlight {
+    position: relative;
+    z-index: 10001;
+    box-shadow:
+        0 0 0 4px var(--color-green),
+        0 0 22px var(--color-green);
+    animation: stackTutorialGlow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes stackTutorialGlow {
+    from {
+        box-shadow:
+            0 0 0 3px var(--color-green),
+            0 0 10px var(--color-green);
+    }
+
+    to {
+        box-shadow:
+            0 0 0 5px var(--color-green),
+            0 0 28px var(--color-green);
+    }
 }
