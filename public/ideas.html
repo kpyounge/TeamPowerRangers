@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ideas</title>
+    <!-- Apply whichever theme (light/dark) was last chosen, before the
+         stylesheet renders, so the page doesn't flash the wrong theme. -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Ideas</h1>
+            <div class="header-links">
+                <a href="profilepage.html">Profile</a>
+            </div>
+        </div>
+
+        <p class="ideas-intro">Small habits you could add to your stacks. Pick the ones that fit your day.</p>
+
+        <!-- ideas.js fills this in with the categories and ideas -->
+        <div class="ideas-container" id="ideasContainer"></div>
+    </div>
+
+    <!-- Bottom navigation bar: Dashboard, Progress and Ideas (this page) -->
+    <nav class="bottom-nav" aria-label="Main">
+        <a href="/dashboard" class="nav-tab">
+            <span class="nav-icon" aria-hidden="true">&#128203;</span>
+            <span>Dashboard</span>
+        </a>
+        <a href="/progress.html" class="nav-tab">
+            <span class="nav-icon" aria-hidden="true">&#128200;</span>
+            <span>Progress</span>
+        </a>
+        <a href="/ideas.html" class="nav-tab active" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">&#128161;</span>
+            <span>Ideas</span>
+        </a>
+    </nav>
+
+    <script src="/js/ideas.js"></script>
+</body>
+</html>

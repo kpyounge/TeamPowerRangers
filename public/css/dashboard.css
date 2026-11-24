@@ -1161,3 +1161,82 @@ body.tutorial-active .modal-overlay {
             0 0 28px var(--color-green);
     }
 }
+
+
+/* ===========================================================
+   Ideas page
+   =========================================================== */
+.ideas-intro {
+    margin: 0 0 24px;
+    opacity: 0.8;
+}
+
+.ideas-container {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+/* Each category sets its own neon color in --neon (see ideas.js) */
+.idea-category h2 {
+    margin: 0 0 12px;
+    padding-left: 10px;
+    border-left: 4px solid var(--neon);
+    font-size: 1.2rem;
+}
+
+/* Ideas sit side by side and wrap onto the next row when they run out of room */
+.ideas-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.idea-card {
+    flex: 1 1 auto;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 10px 10px 16px;
+    background-color: var(--row-bg);
+    border: 2px solid var(--neon);
+    border-radius: 16px;
+    /* neon glow (the first line is the fallback for older browsers) */
+    box-shadow: 0 0 8px var(--neon);
+    box-shadow: 0 0 8px var(--neon),
+                0 0 20px color-mix(in srgb, var(--neon) 45%, transparent);
+}
+
+.idea-text {
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+/* Small "+" button on the far right of each idea */
+.idea-add-btn {
+    flex-shrink: 0;
+    display: grid;
+    place-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: var(--neon);
+    color: #000000;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.idea-add-btn:hover {
+    opacity: 0.85;
+}
+
+.idea-add-btn:focus-visible {
+    outline: 3px solid var(--color-text);
+    outline-offset: 2px;
+}
