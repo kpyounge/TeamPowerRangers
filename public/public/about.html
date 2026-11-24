@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Habit Stacker</title>
+    <!-- Apply the saved light/dark theme before the page renders -->
+    <script>
+        document.documentElement.setAttribute(
+            'data-theme',
+            localStorage.getItem('habitStackerTheme') || 'dark'
+        );
+    </script>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/about.css">
+</head>
+<body>
+    <div class="container about-page">
+
+        <div class="about-header">
+            <a href="/dashboard" class="back-arrow" aria-label="Back to dashboard">&larr;</a>
+            <h1>About</h1>
+        </div>
+
+        <!-- Section 1: About the app -->
+        <section class="about-section" id="aboutApp">
+            <h2>About Habit Stacker</h2>
+
+            <p>
+                Big changes rarely come from big leaps. They come from small,
+                steady steps repeated over time. Habit Stacker grew out of that
+                idea, inspired by James Clear's <em>Atomic Habits</em> and one
+                strategy from it in particular: habit stacking.
+            </p>
+
+            <h3>The idea behind it</h3>
+            <p>
+                Habit stacking means attaching a new habit to something you
+                already do every day. You don't have to rely on willpower or
+                wait until you feel motivated. Your existing routines become the
+                cues that remind you to act.
+            </p>
+            <ul class="example-list">
+                <li>"After I pour my morning coffee, I'll write down one goal for the day."</li>
+                <li>"After I brush my teeth, I'll stretch for two minutes."</li>
+                <li>"After I sit down at my desk, I'll review my to-do list."</li>
+            </ul>
+            <p>
+                Each new habit is linked to one that's already part of your day,
+                so it becomes easier to remember and easier to keep.
+            </p>
+
+            <h3>Why we built it</h3>
+            <p>
+                We're a team of students who know what it's like to juggle
+                classes, work, and everything in between. Like a lot of people,
+                we'd set goals with great intentions, only to watch them fade
+                after a week or two. We realized the problem usually wasn't a
+                lack of motivation. It was the lack of a system that fit into our
+                real, busy lives. Habit Stacker is the tool we wished we had:
+                simple, encouraging, and designed around the way habits actually
+                form.
+            </p>
+
+            <h3>What Habit Stacker helps you do</h3>
+            <ul>
+                <li><strong>Find your anchors:</strong> identify the routines you already do every day without thinking.</li>
+                <li><strong>Stack new habits:</strong> link small, realistic actions to those anchors so they feel natural.</li>
+                <li><strong>Track your progress:</strong> build streaks, see your consistency grow, and celebrate the small wins.</li>
+                <li><strong>Start small:</strong> aim to get just 1% better each day. Progress matters more than perfection.</li>
+            </ul>
+
+            <h3>Our belief</h3>
+            <p>
+                As James Clear puts it, success comes down to the systems you
+                build, not just the goals you set. A missed day doesn't erase
+                your progress, and a tiny habit done consistently can grow into
+                something life-changing. We hope Habit Stacker helps you build
+                the kind of systems that make your goals feel within reach, one
+                small habit at a time.
+            </p>
+        </section>
+
+        <!-- Section 2: About the creators -->
+        <section class="about-section" id="aboutCreators">
+            <h2>About the Creators</h2>
+
+            <p>
+                Habit Stacker was created by Team Power Rangers, a group of
+                students building tools to make everyday goals easier to reach.
+            </p>
+
+            <ul class="creator-list">
+                <li><strong>Chris Truong</strong></li>
+                <li><strong>Joyce Gunaraj</strong></li>
+                <li><strong>Kaitlyn Younger</strong></li>
+                <li><strong>Miriam Rodriguez Ovalle</strong></li>
+                <li><strong>Samantha Le</strong></li>
+                <li><strong>Sharar Anwar</strong></li>
+            </ul>
+        </section>
+
+    </div>
+</body>
+</html>

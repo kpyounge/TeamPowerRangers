@@ -1,0 +1,92 @@
+/* ===========================================================
+   About page. Builds on dashboard.css (colors, light/dark theme).
+   =========================================================== */
+
+   .about-page {
+    padding-bottom: 60px;
+}
+
+/* Header with back arrow */
+.about-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.about-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.back-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: var(--color-purple);
+    color: #FFFFFF;
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.back-arrow:hover {
+    opacity: 0.85;
+}
+
+.back-arrow:focus-visible {
+    outline: 3px solid var(--color-cyan);
+    outline-offset: 2px;
+}
+
+/* Sections */
+.about-section {
+    margin-bottom: 24px;
+    padding: 20px 18px;
+    border: 2px solid var(--color-purple);
+    border-radius: 20px;
+    line-height: 1.6;
+}
+
+.about-section h2 {
+    margin: 0 0 12px;
+    font-size: 1.4rem;
+    color: var(--color-purple);
+}
+
+.about-section h3 {
+    margin: 22px 0 8px;
+    font-size: 1.1rem;
+}
+
+.about-section p {
+    margin: 0 0 12px;
+}
+
+.about-section ul {
+    margin: 0 0 12px;
+    padding-left: 22px;
+}
+
+.about-section li {
+    margin-bottom: 8px;
+}
+
+.example-list li {
+    font-style: italic;
+}
+
+.creator-list {
+    list-style: none;
+    padding-left: 0 !important;
+}
+
+.creator-list li {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background-color: var(--row-bg);
+}
