@@ -230,6 +230,11 @@ reorderStacks: function (stackIds) {
             return this.habitRequest("PUT", "/api/habits/reorder", { ids: habitIds });
         },
 
+        //fetch the ideas this user has already added (the Ideas page hides them)
+        getAddedIdeas: function () {
+            return this.habitRequest("GET", "/api/ideas/added");
+        },
+
         //save how far the user is through the tutorial:
         //"new" -> "first_habit" -> "complete" (the server only moves forward)
         updateTutorialStatus: function (status) {

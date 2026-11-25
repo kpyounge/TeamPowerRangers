@@ -15,6 +15,7 @@ let selectedEditStackColor = 'green';
 
 // The id of the habit currently open in the edit pop-up
 let editingHabitId = null;
+let pendingIdea = null; // the idea this Add Habit pop-up was opened from (see Ideas page)
 let renamingStackId = null;
 let deletingStackId = null;
 
@@ -114,7 +115,7 @@ deleteStackConfirmBtn.addEventListener('click', () => confirmDeleteStack());
     //////////////////////////////////////////
     //INITIAL LOAD
     //////////////////////////////////////////
-    loadDashboard();
+    loadDashboard().then(openIdeaFromUrl);
 });
 
 // Today's date in the user's own time zone, as YYYY-MM-DD
@@ -980,6 +981,7 @@ renderStacks();
 //ADD HABIT MODAL
 //////////////////////////////////////////
 function openModal() {
+    pendingIdea = null;
     document.getElementById('habitNameInput').value = '';
     document.getElementById('habitStatusInput').value = 'working_on';
 
@@ -999,7 +1001,26 @@ function openModal() {
 }
 
 function closeModal() {
+    pendingIdea = null;
     document.getElementById('habitModal').classList.add('hidden');
+}
+
+// The Ideas page sends people here as /dashboard?newHabit=Some%20idea.
+// Open the Add Habit pop-up with that name already filled in.
+function openIdeaFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const idea = (params.get('newHabit') || '').trim();
+    if (!idea) {
+        return;
+    }
+
+    // Take it out of the address so a refresh doesn't open the pop-up again
+    window.history.replaceState(null, '', window.location.pathname);
+
+    openModal();
+    document.getElementById('habitNameInput').value = idea;
+    pendingIdea = idea;
+    document.getElementById('habitStackInput').focus();
 }
 
 async function saveNewHabit() {
@@ -1023,7 +1044,8 @@ async function saveNewHabit() {
     const result = await DataModel.createHabit({
         name,
         status,
-        stack_id
+        stack_id,
+        idea: pendingIdea
     });
 
     saveBtn.disabled = false;

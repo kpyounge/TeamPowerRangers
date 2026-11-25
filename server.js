@@ -1301,6 +1301,21 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
             [result.insertId]
         );
 
+                // If this habit came from the Ideas page, remember that this user has
+        // added that idea so it stops showing there. This is separate on
+        // purpose: if it fails, the habit is still saved.
+        const ideaText = typeof req.body.idea === 'string' ? req.body.idea.trim() : '';
+        if (ideaText && ideaText.length <= 255) {
+            try {
+                await connection.execute(
+                    'INSERT IGNORE INTO user_idea (user_id, idea_text) VALUES (?, ?)',
+                    [req.user.user_id, ideaText]
+                );
+            } catch (ideaError) {
+                console.error('Could not save added idea:', ideaError);
+            }
+        }
+
         await connection.end();
 
         res.status(201).json({
@@ -1467,6 +1482,24 @@ app.delete('/api/habits/:id', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Error deleting habit.' });
+    }
+});
+
+// Route: the ideas this user has already added to their stacks.
+// The Ideas page hides these.
+app.get('/api/ideas/added', authenticateToken, async (req, res) => {
+    try {
+        const connection = await createConnection();
+        const [rows] = await connection.execute(
+            'SELECT idea_text FROM user_idea WHERE user_id = ?',
+            [req.user.user_id]
+        );
+        await connection.end();
+
+        res.status(200).json({ ideas: rows.map(row => row.idea_text) });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error loading ideas.' });
     }
 });
 

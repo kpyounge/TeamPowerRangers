@@ -2,7 +2,9 @@
 //IDEAS.JS
 //Builds the Ideas page: habit ideas grouped by category, each in
 //a neon container with a small "+" button on the right.
-//The "+" buttons don't do anything yet.
+//Clicking "+" opens the dashboard's Add Habit pop-up with the idea's
+//name filled in. Once an idea has been added to a stack it no longer
+//shows here (the server remembers this in the user_idea table).
 //
 //To add or change ideas, edit IDEA_CATEGORIES below. "color" is
 //the neon color used for that category's containers.
@@ -105,16 +107,35 @@ function buildIdeaCard(idea) {
     addBtn.className = 'idea-add-btn';
     addBtn.textContent = '+';
     addBtn.setAttribute('aria-label', `Add "${idea}" to my stacks`);
-    // No action yet - the "+" buttons are placeholders for now
+        // Go to the dashboard, which opens the Add Habit pop-up with this name filled in
+    addBtn.addEventListener('click', () => {
+        window.location.href = '/dashboard?newHabit=' + encodeURIComponent(idea);
+    });
 
     card.append(text, addBtn);
     return card;
 }
 
-function renderIdeas() {
+// Ideas this user has already added to a stack. If they can't be loaded,
+// every idea is simply shown.
+async function loadAddedIdeas() {
+    const result = await DataModel.getAddedIdeas();
+    return result.ok ? new Set(result.data.ideas) : new Set();
+}
+
+async function renderIdeas() {
     const container = document.getElementById('ideasContainer');
+    const added = await loadAddedIdeas();
+
+    container.innerHTML = '';
+    let shown = 0;
 
     IDEA_CATEGORIES.forEach(category => {
+        const remaining = category.ideas.filter(idea => !added.has(idea));
+        if (remaining.length === 0) {
+            return; // every idea in this category has been added - hide it
+        }
+
         const section = document.createElement('section');
         section.className = 'idea-category';
         section.style.setProperty('--neon', category.color);
@@ -124,16 +145,33 @@ function renderIdeas() {
 
         const grid = document.createElement('div');
         grid.className = 'ideas-grid';
-        category.ideas.forEach(idea => grid.appendChild(buildIdeaCard(idea)));
+        remaining.forEach(idea => grid.appendChild(buildIdeaCard(idea)));
 
         section.append(heading, grid);
         container.appendChild(section);
+        shown += remaining.length;
     });
+
+    if (shown === 0) {
+        const done = document.createElement('p');
+        done.className = 'ideas-intro';
+        done.textContent = "You've added every idea. Nice work!";
+        container.appendChild(done);
+    }
 }
 
 // Only logged-in users see the page (same as the other pages)
-if (localStorage.getItem('jwtToken')) {
+const token = localStorage.getItem('jwtToken');
+if (token) {
+    DataModel.setToken(token);
     renderIdeas();
+
+    // Coming back with the browser's Back button: refresh the list
+    window.addEventListener('pageshow', event => {
+        if (event.persisted) {
+            renderIdeas();
+        }
+    });
 } else {
     window.location.href = '/';
 }
