@@ -169,9 +169,11 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/forgot-password', async (req, res) => {
     const { username, firstname, lastname, birthday, newPassword, confirmPassword } = req.body;
 
-    if (!username || !firstname || !lastname || !birthday || !newPassword || !confirmPassword) {
-        return res.status(400).json({ message: 'All fields are required.' });
-    }
+    if (!username || !firstname || !lastname || !newPassword || !confirmPassword) {
+    return res.status(400).json({
+        message: 'Username, first name, last name, and password are required.'
+    });
+}
 
     if (newPassword !== confirmPassword) {
         return res.status(400).json({ message: 'Passwords do not match.' });
@@ -180,11 +182,29 @@ app.post('/api/forgot-password', async (req, res) => {
     try {
         const connection = await createConnection();
 
-        // All four details must match the same account
-        const [rows] = await connection.execute(
-            'SELECT username FROM user WHERE username = ? AND firstname = ? AND lastname = ? AND birthday = ?',
-            [username, firstname, lastname, birthday]
-        );
+        // Birthday is optional. If entered, it must also match.
+let rows;
+
+if (birthday) {
+    [rows] = await connection.execute(
+        `SELECT username
+         FROM user
+         WHERE username = ?
+           AND firstname = ?
+           AND lastname = ?
+           AND birthday = ?`,
+        [username, firstname, lastname, birthday]
+    );
+} else {
+    [rows] = await connection.execute(
+        `SELECT username
+         FROM user
+         WHERE username = ?
+           AND firstname = ?
+           AND lastname = ?`,
+        [username, firstname, lastname]
+    );
+}
 
         if (rows.length === 0) {
             await connection.end();

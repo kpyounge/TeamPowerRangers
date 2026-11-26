@@ -67,7 +67,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/';
     });
     addStackBtn.addEventListener('click', () => openStackModal());
-    stackCancelBtn.addEventListener('click', () => closeStackModal());
+    stackCancelBtn.addEventListener('click', () => {
+    closeStackModal();
+
+    if (typeof endStackCustomizePrompt === 'function') {
+        endStackCustomizePrompt();
+    }
+});
     stackSaveBtn.addEventListener('click', () => saveNewStack());
     document.querySelectorAll('.stack-color-option').forEach(button => {
     button.addEventListener('click', () => {
@@ -722,6 +728,10 @@ async function saveNewStack() {
     stacks.push(result.data.stack);
 closeStackModal();
 renderStacks();
+if (typeof endStackCustomizePrompt === 'function') {
+    endStackCustomizePrompt();
+}
+
 
 if (tutorialStatus === 'first_habit') {
     endStackCustomizePrompt();
